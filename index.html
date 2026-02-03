@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAUUSD Trading Journal 💰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .input-dark { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); }
+        .input-dark:focus { border-color: #fbbf24; outline: none; }
+        .btn-gold { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(251,191,36,0.3); }
+        .table-row:hover { background: rgba(251,191,36,0.1); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(251,191,36,0.5); border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2">🏆 XAUUSD Trading Journal</h1>
+            <p class="text-gray-400">บันทึกการเทรด วิเคราะห์ และพัฒนาทักษะ</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="glass rounded-xl p-4 text-center">
+                <div class="text-3xl mb-1">📊</div>
+                <div class="text-2xl font-bold text-yellow-400" id="totalTrades">0</div>
+                <div class="text-sm text-gray-400">เทรดทั้งหมด</div>
+            </div>
+            <div class="glass rounded-xl p-4 text-center">
+                <div class="text-3xl mb-1">🎯</div>
+                <div class="text-2xl font-bold text-green-400" id="winRate">0%</div>
+                <div class="text-sm text-gray-400">Win Rate</div>
+            </div>
+            <div class="glass rounded-xl p-4 text-center">
+                <div class="text-3xl mb-1">💰</div>
+                <div class="text-2xl font-bold" id="totalPnL">0</div>
+                <div class="text-sm text-gray-400">P&L (จุด)</div>
+            </div>
+            <div class="glass rounded-xl p-4 text-center">
+                <div class="text-3xl mb-1">📅</div>
+                <div class="text-2xl font-bold text-blue-400" id="todayTrades">0/3</div>
+                <div class="text-sm text-gray-400">วันนี้</div>
+            </div>
+        </div>
+
+        <!-- Warning Messages -->
+        <div id="warningBox" class="hidden mb-4">
+            <div class="glass rounded-xl p-4 border-l-4 border-yellow-500">
+                <div class="flex items-center">
+                    <span class="text-2xl mr-3">⚠️</span>
+                    <span id="warningText" class="text-yellow-400"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-8">
+            <!-- Left Column -->
+            <div class="space-y-6">
+                <!-- Entry Form -->
+                <div class="glass rounded-xl p-6">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="mr-2">📝</span> บันทึกการเทรด
+                    </h2>
+                    <form id="tradeForm" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">วันที่</label>
+                                <input type="date" id="date" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">เวลา</label>
+                                <input type="time" id="time" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Direction</label>
+                                <select id="direction" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
+                                    <option value="Long">📈 Long (ซื้อ)</option>
+                                    <option value="Short">📉 Short (ขาย)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Result</label>
+                                <select id="result" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
+                                    <option value="Win">✅ Win</option>
+                                    <option value="Loss">❌ Loss</option>
+                                    <option value="BE">➖ Break Even</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Entry</label>
+                                <input type="number" id="entry" step="0.01" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="0.00" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">SL</label>
+                                <input type="number" id="sl" step="0.01" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="0.00" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">TP</label>
+                                <input type="number" id="tp" step="0.01" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Pips (จุด)</label>
+                            <input type="number" id="pips" step="1" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="+500 หรือ -500" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">สภาพอารมณ์</label>
+                            <div class="grid grid-cols-4 gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="emotion" value="Happy" class="hidden peer">
+                                    <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-yellow-500 peer-checked:border-yellow-500 hover:bg-gray-700">😊 Happy</div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="emotion" value="Focused" class="hidden peer">
+                                    <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-green-500 peer-checked:border-green-500 hover:bg-gray-700">🎯 Focused</div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="emotion" value="Stressed" class="hidden peer">
+                                    <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-red-500 peer-checked:border-red-500 hover:bg-gray-700">😰 Stressed</div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="emotion" value="Tired" class="hidden peer">
+                                    <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-blue-500 peer-checked:border-blue-500 hover:bg-gray-700">😴 Tired</div>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">เหตุผลการเข้าเทรด</label>
+                            <textarea id="reason" rows="2" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="อธิบาย signal, setup, หรือเหตุผล..." required></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Checklist</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="checkEntry" class="w-4 h-4 accent-yellow-500">
+                                    <span class="text-sm">Entry Signal Valid</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="checkSL" class="w-4 h-4 accent-yellow-500">
+                                    <span class="text-sm">SL ≤ 500 จุด</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="checkTP" class="w-4 h-4 accent-yellow-500">
+                                    <span class="text-sm">TP Valid</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="checkRR" class="w-4 h-4 accent-yellow-500">
+                                    <span class="text-sm">RR Ratio ≥ 1:2</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Notes</label>
+                            <textarea id="notes" rows="2" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="บันทึกเพิ่มเติม..."></textarea>
+                        </div>
+                        <button type="submit" class="w-full btn-gold text-black font-bold py-3 rounded-lg transition-all">
+                            💾 บันทึกการเทรด
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-6">
+                <!-- Charts -->
+                <div class="glass rounded-xl p-6">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="mr-2">📈</span> กราฟ P&L
+                    </h2>
+                    <canvas id="pnlChart"></canvas>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="mr-2">🎯</span> Win Rate รายสัปดาห์
+                    </h2>
+                    <canvas id="winRateChart"></canvas>
+                </div>
+
+                <!-- Recent Trades -->
+                <div class="glass rounded-xl p-6">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="mr-2">📋</span> ประวัติล่าสุด (10 รายการ)
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-gray-400 border-b border-gray-700">
+                                    <th class="text-left py-2">วัน/เวลา</th>
+                                    <th class="text-left py-2">Dir</th>
+                                    <th class="text-right py-2">Pips</th>
+                                    <th class="text-center py-2">ผล</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentTrades">
+                                <tr><td colspan="4" class="text-center py-4 text-gray-500">ยังไม่มีข้อมูล</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-8 flex flex-wrap gap-4 justify-center">
+            <button onclick="exportData()" class="glass px-6 py-3 rounded-lg hover:bg-yellow-500 hover:text-black transition-all">
+                📤 Export Data (JSON)
+            </button>
+            <button onclick="askCoolToAnalyze()" class="btn-gold text-black px-6 py-3 rounded-lg font-bold">
+                🤖 Ask Cool to Analyze
+            </button>
+            <button onclick="clearData()" class="glass px-6 py-3 rounded-lg hover:bg-red-500 hover:text-white transition-all">
+                🗑️ Clear All Data
+            </button>
+        </div>
+
+        <!-- Time Filter -->
+        <div class="mt-6 flex justify-center gap-2">
+            <button onclick="setTimeFilter('day')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="day">วัน</button>
+            <button onclick="setTimeFilter('week')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="week">สัปดาห์</button>
+            <button onclick="setTimeFilter('month')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="month">เดือน</button>
+            <button onclick="setTimeFilter('year')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="year">ปี</button>
+            <button onclick="setTimeFilter('all')" class="time-filter glass px-4 py-2 rounded-lg bg-yellow-500 text-black" data-filter="all">ทั้งหมด</button>
+        </div>
+    </div>
+
+    <script>
+        // Database (LocalStorage)
+        const DB_KEY = 'xauusd_trades';
+        let trades = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+        let currentTimeFilter = 'all';
+        let pnlChart, winRateChart;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setDefaultDateTime();
+            initCharts();
+            updateUI();
+            checkDailyLimit();
+        });
+
+        function setDefaultDateTime() {
+            const now = new Date();
+            document.getElementById('date').value = now.toISOString().split('T')[0];
+            document.getElementById('time').value = now.toTimeString().slice(0, 5);
+        }
+
+        // Form Submit
+        document.getElementById('tradeForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            // Validate SL
+            const entry = parseFloat(document.getElementById('entry').value);
+            const sl = parseFloat(document.getElementById('sl').value);
+            const slPips = Math.abs(entry - sl) * 100;
+
+            if (slPips > 500) {
+                alert('⚠️ SL เกิน 500 จุด! (' + slPips.toFixed(0) + ' จุด)');
+                return;
+            }
+
+            // Check daily limit
+            const today = new Date().toISOString().split('T')[0];
+            const todayCount = trades.filter(t => t.date === today).length;
+            if (todayCount >= 3) {
+                alert('⚠️ เทรดครบ 3 ครั้งต่อวันแล้ว!');
+                return;
+            }
+
+            // Get selected emotion
+            const emotion = document.querySelector('input[name="emotion"]:checked')?.value || 'Unknown';
+
+            const trade = {
+                id: Date.now(),
+                date: document.getElementById('date').value,
+                time: document.getElementById('time').value,
+                direction: document.getElementById('direction').value,
+                entry: parseFloat(document.getElementById('entry').value),
+                sl: sl,
+                tp: parseFloat(document.getElementById('tp').value) || null,
+                result: document.getElementById('result').value,
+                pips: parseInt(document.getElementById('pips').value),
+                reason: document.getElementById('reason').value,
+                emotion: emotion,
+                checklist: {
+                    entryValid: document.getElementById('checkEntry').checked,
+                    slValid: document.getElementById('checkSL').checked,
+                    tpValid: document.getElementById('checkTP').checked,
+                    rrValid: document.getElementById('checkRR').checked
+                },
+                notes: document.getElementById('notes').value,
+                createdAt: new Date().toISOString()
+            };
+
+            trades.push(trade);
+            saveTrades();
+            updateUI();
+            alert('✅ บันทึกการเทรดเรียบร้อย!');
+            resetForm();
+            checkDailyLimit();
+        });
+
+        function resetForm() {
+            document.getElementById('tradeForm').reset();
+            setDefaultDateTime();
+        }
+
+        function saveTrades() {
+            localStorage.setItem(DB_KEY, JSON.stringify(trades));
+        }
+
+        function getFilteredTrades() {
+            const now = new Date();
+            switch(currentTimeFilter) {
+                case 'day':
+                    return trades.filter(t => t.date === now.toISOString().split('T')[0]);
+                case 'week':
+                    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                    return trades.filter(t => new Date(t.date) >= weekAgo);
+                case 'month':
+                    const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
+                    return trades.filter(t => new Date(t.date) >= monthAgo);
+                case 'year':
+                    const yearAgo = new Date(now.getFullYear(), 0, 1);
+                    return trades.filter(t => new Date(t.date) >= yearAgo);
+                default:
+                    return trades;
+            }
+        }
+
+        function updateUI() {
+            const filteredTrades = getFilteredTrades();
+            
+            // Stats
+            const totalTrades = filteredTrades.length;
+            const wins = filteredTrades.filter(t => t.result === 'Win').length;
+            const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : 0;
+            const totalPnL = filteredTrades.reduce((sum, t) => sum + t.pips, 0);
+            const today = new Date().toISOString().split('T')[0];
+            const todayTrades = trades.filter(t => t.date === today).length;
+
+            document.getElementById('totalTrades').textContent = totalTrades;
+            document.getElementById('winRate').textContent = winRate + '%';
+            document.getElementById('totalPnL').textContent = (totalPnL >= 0 ? '+' : '') + totalPnL;
+            document.getElementById('totalPnL').className = 'text-2xl font-bold ' + (totalPnL >= 0 ? 'text-green-400' : 'text-red-400');
+            document.getElementById('todayTrades').textContent = todayTrades + '/3';
+
+            // Recent trades table
+            const recentTrades = filteredTrades.slice(-10).reverse();
+            const tbody = document.getElementById('recentTrades');
+            if (recentTrades.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">ยังไม่มีข้อมูล</td></tr>';
+            } else {
+                tbody.innerHTML = recentTrades.map(t => `
+                    <tr class="table-row border-b border-gray-800">
+                        <td class="py-2">${t.date} ${t.time}</td>
+                        <td class="py-2">${t.direction === 'Long' ? '📈' : '📉'}</td>
+                        <td class="py-2 text-right ${t.pips >= 0 ? 'text-green-400' : 'text-red-400'}">${t.pips >= 0 ? '+' : ''}${t.pips}</td>
+                        <td class="py-2 text-center">${t.result === 'Win' ? '✅' : t.result === 'Loss' ? '❌' : '➖'}</td>
+                    </tr>
+                `).join('');
+            }
+
+            updateCharts(filteredTrades);
+        }
+
+        function initCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        labels: { color: '#fff' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    y: {
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                }
+            };
+
+            // P&L Chart
+            const pnlCtx = document.getElementById('pnlChart').getContext('2d');
+            pnlChart = new Chart(pnlCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'P&L (จุด)',
+                        data: [],
+                        borderColor: '#fbbf24',
+                        backgroundColor: 'rgba(251,191,36,0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Win Rate Chart
+            const winRateCtx = document.getElementById('winRateChart').getContext('2d');
+            winRateChart = new Chart(winRateCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Win Rate %',
+                        data: [],
+                        backgroundColor: [],
+                        borderColor: [],
+                        borderWidth: 1
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+
+        function updateCharts(filteredTrades) {
+            // P&L Chart (Cumulative)
+            const sortedTrades = [...filteredTrades].sort((a, b) => new Date(a.date) - new Date(b.date));
+            let cumulative = 0;
+            const pnlData = sortedTrades.map(t => {
+                cumulative += t.pips;
+                return cumulative;
+            });
+
+            pnlChart.data.labels = sortedTrades.map(t => t.date.slice(5)); // MM-DD
+            pnlChart.data.datasets[0].data = pnlData;
+            pnlChart.update();
+
+            // Win Rate by Week
+            const weekStats = {};
+            filteredTrades.forEach(t => {
+                const week = getWeekNumber(t.date);
+                if (!weekStats[week]) {
+                    weekStats[week] = { wins: 0, total: 0 };
+                }
+                weekStats[week].total++;
+                if (t.result === 'Win') weekStats[week].wins++;
+            });
+
+            const weeks = Object.keys(weekStats);
+            const winRates = weeks.map(w => ((weekStats[w].wins / weekStats[w].total) * 100).toFixed(1));
+            const colors = winRates.map(r => r >= 50 ? 'rgba(34,197,94,0.8)' : 'rgba(239,68,68,0.8)');
+            const borders = winRates.map(r => r >= 50 ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)');
+
+            winRateChart.data.labels = weeks;
+            winRateChart.data.datasets[0].data = winRates;
+            winRateChart.data.datasets[0].backgroundColor = colors;
+            winRateChart.data.datasets[0].borderColor = borders;
+            winRateChart.update();
+        }
+
+        function getWeekNumber(dateStr) {
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const week = Math.ceil((date - new Date(year, 0, 1)) / (7 * 24 * 60 * 60 * 1000));
+            return `${year}-W${week}`;
+        }
+
+        function checkDailyLimit() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayCount = trades.filter(t => t.date === today).length;
+            const warningBox = document.getElementById('warningBox');
+            const warningText = document.getElementById('warningText');
+
+            if (todayCount >= 3) {
+                warningBox.classList.remove('hidden');
+                warningText.textContent = '⚠️ เทรดครบ 3 ครั้งต่อวันแล้ว หยุดเทรด!';
+            } else if (todayCount >= 2) {
+                warningBox.classList.remove('hidden');
+                warningText.textContent = '📝 เทรดครบ 2 ครั้งแล้ว เหลือ 1 ครั้ง';
+            } else {
+                warningBox.classList.add('hidden');
+            }
+        }
+
+        function setTimeFilter(filter) {
+            currentTimeFilter = filter;
+            document.querySelectorAll('.time-filter').forEach(btn => {
+                btn.classList.remove('bg-yellow-500', 'text-black');
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('bg-yellow-500', 'text-black');
+                }
+            });
+            updateUI();
+        }
+
+        function exportData() {
+            const data = JSON.stringify(trades, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'xauusd_trades_' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function askCoolToAnalyze() {
+            if (trades.length === 0) {
+                alert('❌ ยังไม่มีข้อมูลให้วิเคราะห์');
+                return;
+            }
+
+            const summary = `
+📊 สรุปข้อมูลการเทรด XAUUSD:
+
+${getFilteredTrades().length} trades ทั้งหมด
+Total P&L: ${trades.reduce((sum, t) => sum + t.pips, 0)} จุด
+Win Rate: ${(trades.filter(t => t.result === 'Win').length / trades.length * 100).toFixed(1)}%
+
+Data JSON:
+${JSON.stringify(trades.slice(-20), null, 2)}
+
+โปรดวิเคราะห์: 1) Pattern การเทรด 2) สภาพอารมณ์ vs ผล 3) แนะนำการปรับปรุง
+            `;
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(summary).then(() => {
+                alert('✅ Data ถูก copy ไป clipboard แล้ว!\n\nส่งให้ผมใน Telegram และบอก "วิเคราะห์ data ให้หน่อย"');
+            }).catch(() => {
+                alert('❌ ไม่สามารถ copy data ได้ ลอง export JSON แทน');
+            });
+        }
+
+        function clearData() {
+            if (confirm('⚠️ ต้องการลบข้อมูลทั้งหมดหรือไม่? นี่ไม่สามารถย้อนกลับได้!')) {
+                trades = [];
+                saveTrades();
+                updateUI();
+                checkDailyLimit();
+                alert('✅ ลบข้อมูลเรียบร้อย');
+            }
+        }
+    </script>
+</body>
+</html>
