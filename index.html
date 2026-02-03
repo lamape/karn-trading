@@ -112,8 +112,9 @@
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm text-gray-400 mb-1">Pips (จุด)</label>
-                            <input type="number" id="pips" step="1" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="+500 หรือ -500" required>
+                            <label class="block text-sm text-gray-400 mb-1">Pips (จุด) - Auto</label>
+                            <input type="number" id="pips" step="1" class="w-full input-dark rounded-lg px-4 py-2 text-white bg-gray-700" placeholder="Auto-calculate" readonly required>
+                            <span class="text-xs text-gray-500">คำนวณอัตโนมัติจาก Direction + Result + Entry + SL/TP</span>
                         </div>
                         <div>
                             <label class="block text-sm text-gray-400 mb-1">สภาพอารมณ์</label>
@@ -149,7 +150,7 @@
                                 </label>
                                 <label class="flex items-center space-x-2 cursor-pointer">
                                     <input type="checkbox" id="checkSL" class="w-4 h-4 accent-yellow-500">
-                                    <span class="text-sm">SL ≤ 500 จุด</span>
+                                    <span class="text-sm">SL Set</span>
                                 </label>
                                 <label class="flex items-center space-x-2 cursor-pointer">
                                     <input type="checkbox" id="checkTP" class="w-4 h-4 accent-yellow-500">
@@ -257,19 +258,68 @@
             document.getElementById('time').value = now.toTimeString().slice(0, 5);
         }
 
+        // Calculate Pips automatically
+        function calculatePips() {
+            const direction = document.getElementById('direction').value;
+            const result = document.getElementById('result').value;
+            const entry = parseFloat(document.getElementById('entry').value);
+            const sl = parseFloat(document.getElementById('sl').value);
+            const tp = parseFloat(document.getElementById('tp').value);
+
+            const pipsInput = document.getElementById('pips');
+
+            // Reset if any field is empty
+            if (!entry || isNaN(entry)) {
+                pipsInput.value = '';
+                return;
+            }
+
+            let pips = 0;
+
+            if (result === 'BE') {
+                // Break Even = 0 pips
+                pips = 0;
+            } else if (result === 'Win') {
+                // Win: calculate from Entry to TP
+                if (!tp || isNaN(tp)) {
+                    pipsInput.value = '';
+                    return;
+                }
+                if (direction === 'Long') {
+                    // Long Win = (TP - Entry) * 100
+                    pips = (tp - entry) * 100;
+                } else {
+                    // Short Win = (Entry - TP) * 100
+                    pips = (entry - tp) * 100;
+                }
+            } else if (result === 'Loss') {
+                // Loss: calculate from Entry to SL
+                if (!sl || isNaN(sl)) {
+                    pipsInput.value = '';
+                    return;
+                }
+                if (direction === 'Long') {
+                    // Long Loss = (SL - Entry) * 100 (negative)
+                    pips = (sl - entry) * 100;
+                } else {
+                    // Short Loss = (Entry - SL) * 100 (negative)
+                    pips = (entry - sl) * 100;
+                }
+            }
+
+            pipsInput.value = pips.toFixed(0);
+        }
+
+        // Add event listeners for auto-calculation
+        document.getElementById('direction').addEventListener('change', calculatePips);
+        document.getElementById('result').addEventListener('change', calculatePips);
+        document.getElementById('entry').addEventListener('input', calculatePips);
+        document.getElementById('sl').addEventListener('input', calculatePips);
+        document.getElementById('tp').addEventListener('input', calculatePips);
+
         // Form Submit
         document.getElementById('tradeForm').addEventListener('submit', (e) => {
             e.preventDefault();
-
-            // Validate SL
-            const entry = parseFloat(document.getElementById('entry').value);
-            const sl = parseFloat(document.getElementById('sl').value);
-            const slPips = Math.abs(entry - sl) * 100;
-
-            if (slPips > 500) {
-                alert('⚠️ SL เกิน 500 จุด! (' + slPips.toFixed(0) + ' จุด)');
-                return;
-            }
 
             // Check daily limit
             const today = new Date().toISOString().split('T')[0];
