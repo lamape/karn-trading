@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Firebase User</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+    <div class="bg-gray-800 rounded-2xl p-8 max-w-md w-full text-white">
+        <h1 class="text-2xl font-bold mb-6 text-center">🔐 Create Firebase User</h1>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Email</label>
+                <input type="email" id="email" value="karn@trading.journal" class="w-full bg-gray-700 rounded-lg px-4 py-3 text-white">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Password</label>
+                <input type="password" id="password" value="karn14629" class="w-full bg-gray-700 rounded-lg px-4 py-3 text-white">
+            </div>
+
+            <div class="bg-yellow-900/50 rounded-lg p-4 text-sm">
+                <p class="font-bold text-yellow-400 mb-2">⚠️ Important:</p>
+                <p class="text-gray-300">
+                    หลังจากกด Create แล้ว<br>
+                    1. Delete ไฟล์นี้ทันที<br>
+                    2. User จะใช้ username: <strong class="text-yellow-400">admin</strong><br>
+                    3. Password: <strong class="text-yellow-400">karn14629</strong>
+                </p>
+            </div>
+
+            <button onclick="createUser()" class="w-full bg-green-500 hover:bg-green-600 text-black font-bold py-3 rounded-lg transition-all">
+                ✅ Create User
+            </button>
+
+            <div id="result" class="hidden"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDI7WZCjOTxVzZjc37NIiRxHD-OV_6w63Y",
+            authDomain: "karn-trading-journal.firebaseapp.com",
+            projectId: "karn-trading-journal",
+            storageBucket: "karn-trading-journal.firebasestorage.app",
+            messagingSenderId: "585098365762",
+            appId: "1:585098365762:web:3e534ffbf6afe1cb5e16db",
+            measurementId: "G-GZTE22DT9F"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        window.createUser = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                resultDiv.classList.remove('hidden');
+                resultDiv.className = 'bg-green-900/50 rounded-lg p-4 text-green-400';
+                resultDiv.innerHTML = `
+                    <p class="font-bold">✅ Success!</p>
+                    <p>User created: ${user.email}</p>
+                    <p class="text-sm text-gray-300 mt-2">
+                        ตอนนี้ login ได้แล้วที่:<br>
+                        <strong>username:</strong> admin<br>
+                        <strong>password:</strong> karn14629
+                    </p>
+                `;
+            } catch (error) {
+                resultDiv.classList.remove('hidden');
+                resultDiv.className = 'bg-red-900/50 rounded-lg p-4 text-red-400';
+                resultDiv.innerHTML = `
+                    <p class="font-bold">❌ Error:</p>
+                    <p>${error.message}</p>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -17,230 +17,409 @@
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         ::-webkit-scrollbar-thumb { background: rgba(251,191,36,0.5); border-radius: 4px; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen text-white">
-    <div class="container mx-auto px-4 py-8 max-w-7xl">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold mb-2">🏆 XAUUSD Trading Journal</h1>
-            <p class="text-gray-400">บันทึกการเทรด วิเคราะห์ และพัฒนาทักษะ</p>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="glass rounded-xl p-4 text-center">
-                <div class="text-3xl mb-1">📊</div>
-                <div class="text-2xl font-bold text-yellow-400" id="totalTrades">0</div>
-                <div class="text-sm text-gray-400">เทรดทั้งหมด</div>
-            </div>
-            <div class="glass rounded-xl p-4 text-center">
-                <div class="text-3xl mb-1">🎯</div>
-                <div class="text-2xl font-bold text-green-400" id="winRate">0%</div>
-                <div class="text-sm text-gray-400">Win Rate</div>
-            </div>
-            <div class="glass rounded-xl p-4 text-center">
-                <div class="text-3xl mb-1">💰</div>
-                <div class="text-2xl font-bold" id="totalPnL">0</div>
-                <div class="text-sm text-gray-400">P&L (จุด)</div>
-            </div>
-            <div class="glass rounded-xl p-4 text-center">
-                <div class="text-3xl mb-1">📅</div>
-                <div class="text-2xl font-bold text-blue-400" id="todayTrades">0/3</div>
-                <div class="text-sm text-gray-400">วันนี้</div>
-            </div>
-        </div>
-
-        <!-- Warning Messages -->
-        <div id="warningBox" class="hidden mb-4">
-            <div class="glass rounded-xl p-4 border-l-4 border-yellow-500">
-                <div class="flex items-center">
-                    <span class="text-2xl mr-3">⚠️</span>
-                    <span id="warningText" class="text-yellow-400"></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid lg:grid-cols-2 gap-8">
-            <!-- Left Column -->
-            <div class="space-y-6">
-                <!-- Entry Form -->
-                <div class="glass rounded-xl p-6">
-                    <h2 class="text-xl font-bold mb-4 flex items-center">
-                        <span class="mr-2">📝</span> บันทึกการเทรด
-                    </h2>
-                    <form id="tradeForm" class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">วันที่</label>
-                                <input type="date" id="date" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">เวลา</label>
-                                <input type="time" id="time" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">Direction</label>
-                                <select id="direction" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
-                                    <option value="Long">📈 Long (ซื้อ)</option>
-                                    <option value="Short">📉 Short (ขาย)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">Result</label>
-                                <select id="result" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
-                                    <option value="Win">✅ Win</option>
-                                    <option value="Loss">❌ Loss</option>
-                                    <option value="BE">➖ Break Even</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">Entry</label>
-                                <input type="number" id="entry" step="0.01" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="0.00" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">SL</label>
-                                <input type="number" id="sl" step="0.01" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="0.00" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">TP</label>
-                                <input type="number" id="tp" step="0.01" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="0.00">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-400 mb-1">Pips (จุด) - Auto</label>
-                            <input type="number" id="pips" step="1" class="w-full input-dark rounded-lg px-4 py-2 text-white bg-gray-700" placeholder="Auto-calculate" readonly required>
-                            <span class="text-xs text-gray-500">คำนวณอัตโนมัติจาก Direction + Result + Entry + SL/TP</span>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-400 mb-1">สภาพอารมณ์</label>
-                            <div class="grid grid-cols-4 gap-2">
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="emotion" value="Happy" class="hidden peer">
-                                    <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-yellow-500 peer-checked:border-yellow-500 hover:bg-gray-700">😊 Happy</div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="emotion" value="Focused" class="hidden peer">
-                                    <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-green-500 peer-checked:border-green-500 hover:bg-gray-700">🎯 Focused</div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="emotion" value="Stressed" class="hidden peer">
-                                    <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-red-500 peer-checked:border-red-500 hover:bg-gray-700">😰 Stressed</div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="emotion" value="Tired" class="hidden peer">
-                                    <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-blue-500 peer-checked:border-blue-500 hover:bg-gray-700">😴 Tired</div>
-                                </label>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-400 mb-1">เหตุผลการเข้าเทรด</label>
-                            <textarea id="reason" rows="2" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="อธิบาย signal, setup, หรือเหตุผล..." required></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-400 mb-1">Checklist</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" id="checkEntry" class="w-4 h-4 accent-yellow-500">
-                                    <span class="text-sm">Entry Signal Valid</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" id="checkSL" class="w-4 h-4 accent-yellow-500">
-                                    <span class="text-sm">SL Set</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" id="checkTP" class="w-4 h-4 accent-yellow-500">
-                                    <span class="text-sm">TP Valid</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" id="checkRR" class="w-4 h-4 accent-yellow-500">
-                                    <span class="text-sm">RR Ratio ≥ 1:2</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-400 mb-1">Notes</label>
-                            <textarea id="notes" rows="2" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="บันทึกเพิ่มเติม..."></textarea>
-                        </div>
-                        <button type="submit" class="w-full btn-gold text-black font-bold py-3 rounded-lg transition-all">
-                            💾 บันทึกการเทรด
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Right Column -->
-            <div class="space-y-6">
-                <!-- Charts -->
-                <div class="glass rounded-xl p-6">
-                    <h2 class="text-xl font-bold mb-4 flex items-center">
-                        <span class="mr-2">📈</span> กราฟ P&L
-                    </h2>
-                    <canvas id="pnlChart"></canvas>
-                </div>
-
-                <div class="glass rounded-xl p-6">
-                    <h2 class="text-xl font-bold mb-4 flex items-center">
-                        <span class="mr-2">🎯</span> Win Rate รายสัปดาห์
-                    </h2>
-                    <canvas id="winRateChart"></canvas>
-                </div>
-
-                <!-- Recent Trades -->
-                <div class="glass rounded-xl p-6">
-                    <h2 class="text-xl font-bold mb-4 flex items-center">
-                        <span class="mr-2">📋</span> ประวัติล่าสุด (10 รายการ)
-                    </h2>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="text-gray-400 border-b border-gray-700">
-                                    <th class="text-left py-2">วัน/เวลา</th>
-                                    <th class="text-left py-2">Dir</th>
-                                    <th class="text-right py-2">Pips</th>
-                                    <th class="text-center py-2">ผล</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recentTrades">
-                                <tr><td colspan="4" class="text-center py-4 text-gray-500">ยังไม่มีข้อมูล</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="mt-8 flex flex-wrap gap-4 justify-center">
-            <button onclick="exportData()" class="glass px-6 py-3 rounded-lg hover:bg-yellow-500 hover:text-black transition-all">
-                📤 Export Data (JSON)
-            </button>
-            <button onclick="askCoolToAnalyze()" class="btn-gold text-black px-6 py-3 rounded-lg font-bold">
-                🤖 Ask Cool to Analyze
-            </button>
-            <button onclick="clearData()" class="glass px-6 py-3 rounded-lg hover:bg-red-500 hover:text-white transition-all">
-                🗑️ Clear All Data
-            </button>
-        </div>
-
-        <!-- Time Filter -->
-        <div class="mt-6 flex justify-center gap-2">
-            <button onclick="setTimeFilter('day')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="day">วัน</button>
-            <button onclick="setTimeFilter('week')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="week">สัปดาห์</button>
-            <button onclick="setTimeFilter('month')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="month">เดือน</button>
-            <button onclick="setTimeFilter('year')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="year">ปี</button>
-            <button onclick="setTimeFilter('all')" class="time-filter glass px-4 py-2 rounded-lg bg-yellow-500 text-black" data-filter="all">ทั้งหมด</button>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="min-h-screen flex items-center justify-center">
+        <div class="text-center">
+            <div class="text-6xl mb-4 animate-bounce">🏆</div>
+            <p class="text-gray-400">กำลังโหลด...</p>
         </div>
     </div>
 
-    <script>
-        // Database (LocalStorage)
-        const DB_KEY = 'xauusd_trades';
-        let trades = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 hidden">
+        <div class="glass rounded-2xl p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <div class="text-6xl mb-4">🏆</div>
+                <h1 class="text-3xl font-bold mb-2">XAUUSD Trading Journal</h1>
+                <p class="text-gray-400">กรุณาเข้าสู่ระบบ</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Username</label>
+                    <input type="text" id="loginUsername" class="w-full input-dark rounded-lg px-4 py-3 text-white" placeholder="Enter username" required>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Password</label>
+                    <input type="password" id="loginPassword" class="w-full input-dark rounded-lg px-4 py-3 text-white" placeholder="Enter password" required>
+                </div>
+                <div id="loginError" class="text-red-400 text-sm text-center hidden">
+                    Username หรือ Password ไม่ถูกต้อง
+                </div>
+                <button type="submit" class="w-full btn-gold text-black font-bold py-3 rounded-lg transition-all">
+                    🔐 เข้าสู่ระบบ
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App (hidden by default) -->
+    <div id="mainApp" class="hidden">
+        <div class="container mx-auto px-4 py-8 max-w-7xl">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <div class="text-center flex-1">
+                    <h1 class="text-4xl font-bold mb-2">🏆 XAUUSD Trading Journal</h1>
+                    <p class="text-gray-400">บันทึกการเทรด วิเคราะห์ และพัฒนาทักษะ</p>
+                </div>
+                <button onclick="logout()" class="glass px-4 py-2 rounded-lg hover:bg-red-500 hover:text-white transition-all">
+                    🚪 Logout
+                </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-1">📊</div>
+                    <div class="text-2xl font-bold text-yellow-400" id="totalTrades">0</div>
+                    <div class="text-sm text-gray-400">เทรดทั้งหมด</div>
+                </div>
+                <div class="glass rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-1">🎯</div>
+                    <div class="text-2xl font-bold text-green-400" id="winRate">0%</div>
+                    <div class="text-sm text-gray-400">Win Rate</div>
+                </div>
+                <div class="glass rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-1">💰</div>
+                    <div class="text-2xl font-bold" id="totalPnL">0</div>
+                    <div class="text-sm text-gray-400">P&L (จุด)</div>
+                </div>
+                <div class="glass rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-1">📅</div>
+                    <div class="text-2xl font-bold text-blue-400" id="todayTrades">0/3</div>
+                    <div class="text-sm text-gray-400">วันนี้</div>
+                </div>
+            </div>
+
+            <!-- Warning Messages -->
+            <div id="warningBox" class="hidden mb-4">
+                <div class="glass rounded-xl p-4 border-l-4 border-yellow-500">
+                    <div class="flex items-center">
+                        <span class="text-2xl mr-3">⚠️</span>
+                        <span id="warningText" class="text-yellow-400"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Left Column -->
+                <div class="space-y-6">
+                    <!-- Entry Form -->
+                    <div class="glass rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-4 flex items-center">
+                            <span class="mr-2">📝</span> บันทึกการเทรด
+                        </h2>
+                        <form id="tradeForm" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">วันที่</label>
+                                    <input type="date" id="date" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">เวลา</label>
+                                    <input type="time" id="time" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">Direction</label>
+                                    <select id="direction" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
+                                        <option value="Long">📈 Long (ซื้อ)</option>
+                                        <option value="Short">📉 Short (ขาย)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">Result</label>
+                                    <select id="result" class="w-full input-dark rounded-lg px-4 py-2 text-white" required>
+                                        <option value="Win">✅ Win</option>
+                                        <option value="Loss">❌ Loss</option>
+                                        <option value="BE">➖ Break Even</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">Entry</label>
+                                    <input type="number" id="entry" step="0.01" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="0.00" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">SL</label>
+                                    <input type="number" id="sl" step="0.01" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="0.00" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">TP</label>
+                                    <input type="number" id="tp" step="0.01" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Pips (จุด) - Auto</label>
+                                <input type="number" id="pips" step="1" class="w-full input-dark rounded-lg px-4 py-2 text-white bg-gray-700" placeholder="Auto-calculate" readonly required>
+                                <span class="text-xs text-gray-500">คำนวณอัตโนมัติจาก Direction + Result + Entry + SL/TP</span>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">สภาพอารมณ์</label>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="emotion" value="Happy" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-yellow-500 peer-checked:border-yellow-500 hover:bg-gray-700">😊 Happy</div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="emotion" value="Focused" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-green-500 peer-checked:border-green-500 hover:bg-gray-700">🎯 Focused</div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="emotion" value="Stressed" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-red-500 peer-checked:border-red-500 hover:bg-gray-700">😰 Stressed</div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="emotion" value="Tired" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-blue-500 peer-checked:border-blue-500 hover:bg-gray-700">😴 Tired</div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">เหตุผลการเข้าเทรด</label>
+                                <textarea id="reason" rows="2" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="อธิบาย signal, setup, หรือเหตุผล..." required></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Checklist</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="checkEntry" class="w-4 h-4 accent-yellow-500">
+                                        <span class="text-sm">Entry Signal Valid</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="checkSL" class="w-4 h-4 accent-yellow-500">
+                                        <span class="text-sm">SL Set</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="checkTP" class="w-4 h-4 accent-yellow-500">
+                                        <span class="text-sm">TP Valid</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="checkRR" class="w-4 h-4 accent-yellow-500">
+                                        <span class="text-sm">RR Ratio ≥ 1:2</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Notes</label>
+                                <textarea id="notes" rows="2" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="บันทึกเพิ่มเติม..."></textarea>
+                            </div>
+                            <button type="submit" class="w-full btn-gold text-black font-bold py-3 rounded-lg transition-all">
+                                💾 บันทึกการเทรด
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="space-y-6">
+                    <!-- Charts -->
+                    <div class="glass rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-4 flex items-center">
+                            <span class="mr-2">📈</span> กราฟ P&L
+                        </h2>
+                        <canvas id="pnlChart"></canvas>
+                    </div>
+
+                    <div class="glass rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-4 flex items-center">
+                            <span class="mr-2">🎯</span> Win Rate รายสัปดาห์
+                        </h2>
+                        <canvas id="winRateChart"></canvas>
+                    </div>
+
+                    <!-- Recent Trades -->
+                    <div class="glass rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-4 flex items-center">
+                            <span class="mr-2">📋</span> ประวัติล่าสุด (10 รายการ)
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-400 border-b border-gray-700">
+                                        <th class="text-left py-2">วัน/เวลา</th>
+                                        <th class="text-left py-2">Dir</th>
+                                        <th class="text-right py-2">Pips</th>
+                                        <th class="text-center py-2">ผล</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentTrades">
+                                    <tr><td colspan="4" class="text-center py-4 text-gray-500">ยังไม่มีข้อมูล</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-8 flex flex-wrap gap-4 justify-center">
+                <button onclick="exportData()" class="glass px-6 py-3 rounded-lg hover:bg-yellow-500 hover:text-black transition-all">
+                    📤 Export Data (JSON)
+                </button>
+                <button onclick="askCoolToAnalyze()" class="btn-gold text-black px-6 py-3 rounded-lg font-bold">
+                    🤖 Ask Cool to Analyze
+                </button>
+                <button onclick="clearData()" class="glass px-6 py-3 rounded-lg hover:bg-red-500 hover:text-white transition-all">
+                    🗑️ Clear All Data
+                </button>
+            </div>
+
+            <!-- Time Filter -->
+            <div class="mt-6 flex justify-center gap-2">
+                <button onclick="setTimeFilter('day')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="day">วัน</button>
+                <button onclick="setTimeFilter('week')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="week">สัปดาห์</button>
+                <button onclick="setTimeFilter('month')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="month">เดือน</button>
+                <button onclick="setTimeFilter('year')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="year">ปี</button>
+                <button onclick="setTimeFilter('all')" class="time-filter glass px-4 py-2 rounded-lg bg-yellow-500 text-black" data-filter="all">ทั้งหมด</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // ======================
+        // FIREBASE CONFIG
+        // ======================
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDI7WZCjOTxVzZjc37NIiRxHD-OV_6w63Y",
+            authDomain: "karn-trading-journal.firebaseapp.com",
+            projectId: "karn-trading-journal",
+            storageBucket: "karn-trading-journal.firebasestorage.app",
+            messagingSenderId: "585098365762",
+            appId: "1:585098365762:web:3e534ffbf6afe1cb5e16db",
+            measurementId: "G-GZTE22DT9F"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ======================
+        // LOGIN SYSTEM
+        // ======================
+        const LOGIN_EMAIL = 'karn@trading.journal';
+        const LOGIN_PASSWORD = 'karn14629';
+
+        function checkLogin() {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    showMainApp();
+                } else {
+                    showLoginScreen();
+                }
+            });
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function showMainApp() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            loadTradesFromFirestore();
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (username === 'admin' && password === LOGIN_PASSWORD) {
+                try {
+                    await signInWithEmailAndPassword(auth, LOGIN_EMAIL, LOGIN_PASSWORD);
+                } catch (error) {
+                    console.error('Login error:', error);
+                    if (error.code === 'auth/user-not-found') {
+                        alert('❌ User ยังไม่ถูกสร้าง ติดต่อ Cool เพื่อ setup');
+                    } else if (error.code === 'auth/invalid-credential') {
+                        alert('❌ Username หรือ Password ไม่ถูกต้อง');
+                    } else {
+                        alert('❌ เกิดข้อผิดพลาด: ' + error.message);
+                    }
+                }
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+                document.getElementById('loginPassword').value = '';
+            }
+        });
+
+        window.logout = async function() {
+            try {
+                await signOut(auth);
+                showLoginScreen();
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('loginError').classList.add('hidden');
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('❌ เกิดข้อผิดพลาด: ' + error.message);
+            }
+        };
+
+        // ======================
+        // FIRESTORE OPERATIONS
+        // ======================
+        async function loadTradesFromFirestore() {
+            try {
+                const q = query(collection(db, 'trades'), orderBy('date', 'desc'), orderBy('time', 'desc'));
+                const querySnapshot = await getDocs(q);
+                trades = [];
+                querySnapshot.forEach((doc) => {
+                    trades.push({ id: doc.id, ...doc.data() });
+                });
+                updateUI();
+            } catch (error) {
+                console.error('Error loading trades:', error);
+                alert('❌ ไม่สามารถโหลดข้อมูลได้: ' + error.message);
+            }
+        }
+
+        async function saveTradeToFirestore(trade) {
+            try {
+                await addDoc(collection(db, 'trades'), trade);
+            } catch (error) {
+                console.error('Error saving trade:', error);
+                throw error;
+            }
+        }
+
+        async function deleteAllTradesFromFirestore() {
+            try {
+                const q = query(collection(db, 'trades'));
+                const querySnapshot = await getDocs(q);
+                const batch = writeBatch(db);
+
+                querySnapshot.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+
+                if (querySnapshot.size > 0) {
+                    await batch.commit();
+                }
+            } catch (error) {
+                console.error('Error deleting trades:', error);
+                throw error;
+            }
+        }
+
+        // ======================
+        // MAIN APP LOGIC
+        // ======================
+        let trades = [];
         let currentTimeFilter = 'all';
         let pnlChart, winRateChart;
 
@@ -248,14 +427,17 @@
         document.addEventListener('DOMContentLoaded', () => {
             setDefaultDateTime();
             initCharts();
-            updateUI();
-            checkDailyLimit();
+            checkLogin();
         });
 
         function setDefaultDateTime() {
             const now = new Date();
-            document.getElementById('date').value = now.toISOString().split('T')[0];
-            document.getElementById('time').value = now.toTimeString().slice(0, 5);
+            const dateInput = document.getElementById('date');
+            const timeInput = document.getElementById('time');
+            if (dateInput && timeInput) {
+                dateInput.value = now.toISOString().split('T')[0];
+                timeInput.value = now.toTimeString().slice(0, 5);
+            }
         }
 
         // Calculate Pips automatically
@@ -277,32 +459,25 @@
             let pips = 0;
 
             if (result === 'BE') {
-                // Break Even = 0 pips
                 pips = 0;
             } else if (result === 'Win') {
-                // Win: calculate from Entry to TP
                 if (!tp || isNaN(tp)) {
                     pipsInput.value = '';
                     return;
                 }
                 if (direction === 'Long') {
-                    // Long Win = (TP - Entry) * 100
                     pips = (tp - entry) * 100;
                 } else {
-                    // Short Win = (Entry - TP) * 100
                     pips = (entry - tp) * 100;
                 }
             } else if (result === 'Loss') {
-                // Loss: calculate from Entry to SL
                 if (!sl || isNaN(sl)) {
                     pipsInput.value = '';
                     return;
                 }
                 if (direction === 'Long') {
-                    // Long Loss = (SL - Entry) * 100 (negative)
                     pips = (sl - entry) * 100;
                 } else {
-                    // Short Loss = (Entry - SL) * 100 (negative)
                     pips = (entry - sl) * 100;
                 }
             }
@@ -318,7 +493,7 @@
         document.getElementById('tp').addEventListener('input', calculatePips);
 
         // Form Submit
-        document.getElementById('tradeForm').addEventListener('submit', (e) => {
+        document.getElementById('tradeForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             // Check daily limit
@@ -333,12 +508,11 @@
             const emotion = document.querySelector('input[name="emotion"]:checked')?.value || 'Unknown';
 
             const trade = {
-                id: Date.now(),
                 date: document.getElementById('date').value,
                 time: document.getElementById('time').value,
                 direction: document.getElementById('direction').value,
                 entry: parseFloat(document.getElementById('entry').value),
-                sl: sl,
+                sl: parseFloat(document.getElementById('sl').value),
                 tp: parseFloat(document.getElementById('tp').value) || null,
                 result: document.getElementById('result').value,
                 pips: parseInt(document.getElementById('pips').value),
@@ -354,21 +528,20 @@
                 createdAt: new Date().toISOString()
             };
 
-            trades.push(trade);
-            saveTrades();
-            updateUI();
-            alert('✅ บันทึกการเทรดเรียบร้อย!');
-            resetForm();
-            checkDailyLimit();
+            try {
+                await saveTradeToFirestore(trade);
+                await loadTradesFromFirestore();
+                alert('✅ บันทึกการเทรดเรียบร้อย!');
+                resetForm();
+                checkDailyLimit();
+            } catch (error) {
+                alert('❌ ไม่สามารถบันทึกข้อมูลได้: ' + error.message);
+            }
         });
 
         function resetForm() {
             document.getElementById('tradeForm').reset();
             setDefaultDateTime();
-        }
-
-        function saveTrades() {
-            localStorage.setItem(DB_KEY, JSON.stringify(trades));
         }
 
         function getFilteredTrades() {
@@ -392,7 +565,7 @@
 
         function updateUI() {
             const filteredTrades = getFilteredTrades();
-            
+
             // Stats
             const totalTrades = filteredTrades.length;
             const wins = filteredTrades.filter(t => t.result === 'Win').length;
@@ -485,7 +658,11 @@
 
         function updateCharts(filteredTrades) {
             // P&L Chart (Cumulative)
-            const sortedTrades = [...filteredTrades].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const sortedTrades = [...filteredTrades].sort((a, b) => {
+                const dateA = new Date(a.date + 'T' + a.time);
+                const dateB = new Date(b.date + 'T' + b.time);
+                return dateA - dateB;
+            });
             let cumulative = 0;
             const pnlData = sortedTrades.map(t => {
                 cumulative += t.pips;
@@ -543,7 +720,7 @@
             }
         }
 
-        function setTimeFilter(filter) {
+        window.setTimeFilter = function(filter) {
             currentTimeFilter = filter;
             document.querySelectorAll('.time-filter').forEach(btn => {
                 btn.classList.remove('bg-yellow-500', 'text-black');
@@ -552,9 +729,9 @@
                 }
             });
             updateUI();
-        }
+        };
 
-        function exportData() {
+        window.exportData = function() {
             const data = JSON.stringify(trades, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -563,9 +740,9 @@
             a.download = 'xauusd_trades_' + new Date().toISOString().split('T')[0] + '.json';
             a.click();
             URL.revokeObjectURL(url);
-        }
+        };
 
-        function askCoolToAnalyze() {
+        window.askCoolToAnalyze = function() {
             if (trades.length === 0) {
                 alert('❌ ยังไม่มีข้อมูลให้วิเคราะห์');
                 return;
@@ -584,23 +761,26 @@ ${JSON.stringify(trades.slice(-20), null, 2)}
 โปรดวิเคราะห์: 1) Pattern การเทรด 2) สภาพอารมณ์ vs ผล 3) แนะนำการปรับปรุง
             `;
 
-            // Copy to clipboard
             navigator.clipboard.writeText(summary).then(() => {
                 alert('✅ Data ถูก copy ไป clipboard แล้ว!\n\nส่งให้ผมใน Telegram และบอก "วิเคราะห์ data ให้หน่อย"');
             }).catch(() => {
                 alert('❌ ไม่สามารถ copy data ได้ ลอง export JSON แทน');
             });
-        }
+        };
 
-        function clearData() {
+        window.clearData = async function() {
             if (confirm('⚠️ ต้องการลบข้อมูลทั้งหมดหรือไม่? นี่ไม่สามารถย้อนกลับได้!')) {
-                trades = [];
-                saveTrades();
-                updateUI();
-                checkDailyLimit();
-                alert('✅ ลบข้อมูลเรียบร้อย');
+                try {
+                    await deleteAllTradesFromFirestore();
+                    trades = [];
+                    updateUI();
+                    checkDailyLimit();
+                    alert('✅ ลบข้อมูลเรียบร้อย');
+                } catch (error) {
+                    alert('❌ ไม่สามารถลบข้อมูลได้: ' + error.message);
+                }
             }
-        }
+        };
     </script>
 </body>
 </html>
