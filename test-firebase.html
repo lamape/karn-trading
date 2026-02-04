@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Firebase Loading</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+    <div class="bg-gray-800 rounded-2xl p-8 max-w-md w-full text-white">
+        <h1 class="text-2xl font-bold mb-6 text-center">🧪 Test Firebase Loading</h1>
+
+        <div class="space-y-4">
+            <div id="firebaseStatus" class="bg-yellow-900/50 rounded-lg p-4 text-yellow-400">
+                <p class="font-bold">⏳ กำลังโหลด Firebase...</p>
+            </div>
+
+            <div class="bg-gray-700 rounded-lg p-4 text-sm text-gray-300">
+                <p><strong>ขั้นตอนการทดสอบ:</strong></p>
+                <ol class="list-decimal list-inside mt-2 space-y-1">
+                    <li>รอจน status เปลี่ยนเป็น ✅</li>
+                    <li>กดปุ่ม "Test Login"</li>
+                    <li>ดู result ที่แสดง</li>
+                </ol>
+            </div>
+
+            <button id="testBtn" onclick="testLogin()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-all disabled">
+                🧪 Test Login
+            </button>
+
+            <div id="result" class="hidden"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK from unpkg.com -->
+    <script src="https://unpkg.com/firebase@10.7.1/firebase-app-compat.js"></script>
+    <script src="https://unpkg.com/firebase@10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDI7WZCjOTxVzZjc37NIiRxHD-OV_6w63Y",
+            authDomain: "karn-trading-journal.firebaseapp.com",
+            projectId: "karn-trading-journal",
+            storageBucket: "karn-trading-journal.firebasestorage.app",
+            messagingSenderId: "585098365762",
+            appId: "1:585098365762:web:3e534ffbf6afe1cb5e16db",
+            measurementId: "G-GZTE22DT9F"
+        };
+
+        const firebaseStatus = document.getElementById('firebaseStatus');
+        const testBtn = document.getElementById('testBtn');
+        const resultDiv = document.getElementById('result');
+
+        // Check Firebase loading
+        let checkCount = 0;
+        const maxChecks = 20; // 10 seconds max
+
+        const checkInterval = setInterval(() => {
+            checkCount++;
+
+            if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') {
+                clearInterval(checkInterval);
+                firebaseStatus.className = 'bg-green-900/50 rounded-lg p-4 text-green-400';
+                firebaseStatus.innerHTML = `
+                    <p class="font-bold">✅ Firebase พร้อม!</p>
+                    <p class="text-sm mt-2">
+                        firebase.app: ${typeof firebase.app !== 'undefined' ? 'OK ✅' : 'MISSING ❌'}<br>
+                        firebase.auth: ${typeof firebase.auth !== 'undefined' ? 'OK ✅' : 'MISSING ❌'}
+                    </p>
+                `;
+                testBtn.disabled = false;
+            } else if (checkCount >= maxChecks) {
+                clearInterval(checkInterval);
+                firebaseStatus.className = 'bg-red-900/50 rounded-lg p-4 text-red-400';
+                firebaseStatus.innerHTML = `
+                    <p class="font-bold">❌ Firebase โหลดไม่สำเร็จ</p>
+                    <p class="text-sm mt-2">ลองรีเฟรชหน้าจอ (Ctrl+Shift+R)</p>
+                `;
+                testBtn.disabled = true;
+            } else {
+                firebaseStatus.innerHTML = `
+                    <p class="font-bold">⏳ กำลังโหลด Firebase... (${checkCount}/${maxChecks})</p>
+                `;
+            }
+        }, 500);
+
+        window.testLogin = async function() {
+            testBtn.disabled = true;
+            testBtn.textContent = '⏳ กำลังทดสอบ...';
+
+            try {
+                const app = firebase.initializeApp(firebaseConfig);
+                const auth = firebase.auth();
+
+                console.log('Firebase initialized:', app);
+                console.log('Auth:', auth);
+
+                resultDiv.classList.remove('hidden');
+                resultDiv.className = 'bg-green-900/50 rounded-lg p-4 text-green-400';
+                resultDiv.innerHTML = `
+                    <p class="font-bold">✅ Test Login สำเร็จ!</p>
+                    <p class="text-sm mt-2">
+                        Firebase App: พร้อม ✅<br>
+                        Firebase Auth: พร้อม ✅
+                    </p>
+                `;
+
+                testBtn.textContent = '✅ Test Login';
+                testBtn.className = 'w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-all';
+            } catch (error) {
+                console.error('Error:', error);
+
+                resultDiv.classList.remove('hidden');
+                resultDiv.className = 'bg-red-900/50 rounded-lg p-4 text-red-400';
+                resultDiv.innerHTML = `
+                    <p class="font-bold">❌ Test Login ล้มเหลว!</p>
+                    <p class="text-sm mt-2 text-red-300">
+                        ${error.message}
+                    </p>
+                    <p class="text-xs mt-2 text-gray-400">
+                        Error Code: ${error.code || 'N/A'}
+                    </p>
+                `;
+
+                testBtn.disabled = false;
+                testBtn.textContent = '🔄 ลองอีกครั้ง';
+                testBtn.className = 'w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-lg transition-all';
+            }
+        };
+    </script>
+</body>
+</html>
