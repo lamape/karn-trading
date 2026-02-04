@@ -18,6 +18,10 @@
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         ::-webkit-scrollbar-thumb { background: rgba(251,191,36,0.5); border-radius: 4px; }
         .hidden { display: none !important; }
+        .checkbox-item input:checked + div {
+            background: #fbbf24;
+            color: #000;
+        }
     </style>
 </head>
 <body class="min-h-screen text-white">
@@ -91,18 +95,8 @@
                 </div>
                 <div class="glass rounded-xl p-4 text-center">
                     <div class="text-3xl mb-1">📅</div>
-                    <div class="text-2xl font-bold text-blue-400" id="todayTrades">0/3</div>
+                    <div class="text-2xl font-bold text-blue-400" id="todayTrades">0</div>
                     <div class="text-sm text-gray-400">วันนี้</div>
-                </div>
-            </div>
-
-            <!-- Warning Messages -->
-            <div id="warningBox" class="hidden mb-4">
-                <div class="glass rounded-xl p-4 border-l-4 border-yellow-500">
-                    <div class="flex items-center">
-                        <span class="text-2xl mr-3">⚠️</span>
-                        <span id="warningText" class="text-yellow-400"></span>
-                    </div>
                 </div>
             </div>
 
@@ -161,6 +155,98 @@
                                 <input type="number" id="pips" step="1" class="w-full input-dark rounded-lg px-4 py-2 text-white bg-gray-700" placeholder="Auto-calculate" readonly required>
                                 <span class="text-xs text-gray-500">คำนวณอัตโนมัติจาก Direction + Result + Entry + SL/TP</span>
                             </div>
+
+                            <!-- Timeframe -->
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Timeframe (เลือกได้หลาย)</label>
+                                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="timeframe" value="M1" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">M1</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="timeframe" value="M5" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">M5</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="timeframe" value="M15" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">M15</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="timeframe" value="M30" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">M30</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="timeframe" value="H1" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">H1</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="timeframe" value="H4" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">H4</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="timeframe" value="D1" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">D1</div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Entry Pattern / Setup -->
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">เหตุผลการเข้าเทรด (เลือกได้หลาย)</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Engulfing Buy" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">📈 Engulfing Buy</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Engulfing Sell" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">📉 Engulfing Sell</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Pin Bar Buy" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">📈 Pin Bar Buy</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Pin Bar Sell" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">📉 Pin Bar Sell</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Breakout Buy" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">📈 Breakout Buy</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Breakout Sell" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">📉 Breakout Sell</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Trend Follow Buy" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">📈 Trend Follow Buy</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Trend Follow Sell" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">📉 Trend Follow Sell</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Support Buy" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">📈 Support Buy</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Resistance Sell" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">📉 Resistance Sell</div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="checkbox" name="pattern" value="Other" class="hidden peer">
+                                        <div class="text-center p-2 rounded-lg border border-gray-600 hover:bg-gray-700">❓ อื่นๆ</div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">รายละเอียด (ถ้ามี)</label>
+                                <textarea id="patternNotes" rows="2" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="รายละเอียด setup..."></textarea>
+                            </div>
+
                             <div>
                                 <label class="block text-sm text-gray-400 mb-1">สภาพอารมณ์</label>
                                 <div class="grid grid-cols-4 gap-2">
@@ -181,10 +267,6 @@
                                         <div class="text-center p-2 rounded-lg border border-gray-600 peer-checked:bg-blue-500 peer-checked:border-blue-500 hover:bg-gray-700">😴 Tired</div>
                                     </label>
                                 </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">เหตุผลการเข้าเทรด</label>
-                                <textarea id="reason" rows="2" class="w-full input-dark rounded-lg px-4 py-2 text-white" placeholder="อธิบาย signal, setup, หรือเหตุผล..." required></textarea>
                             </div>
                             <div>
                                 <label class="block text-sm text-gray-400 mb-1">Checklist</label>
@@ -580,13 +662,13 @@
         document.getElementById('tradeForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // Check daily limit
-            const today = new Date().toISOString().split('T')[0];
-            const todayCount = trades.filter(t => t.date === today).length;
-            if (todayCount >= 3) {
-                alert('⚠️ เทรดครบ 3 ครั้งต่อวันแล้ว!');
-                return;
-            }
+            // Get selected timeframes (multiple selection allowed)
+            const timeframeCheckboxes = document.querySelectorAll('input[name="timeframe"]:checked');
+            const timeframes = Array.from(timeframeCheckboxes).map(cb => cb.value);
+
+            // Get selected patterns (multiple selection allowed)
+            const patternCheckboxes = document.querySelectorAll('input[name="pattern"]:checked');
+            const patterns = Array.from(patternCheckboxes).map(cb => cb.value);
 
             // Get selected emotion
             const emotion = document.querySelector('input[name="emotion"]:checked')?.value || 'Unknown';
@@ -600,7 +682,9 @@
                 tp: parseFloat(document.getElementById('tp').value) || null,
                 result: document.getElementById('result').value,
                 pips: parseInt(document.getElementById('pips').value),
-                reason: document.getElementById('reason').value,
+                timeframes: timeframes,
+                patterns: patterns,
+                patternNotes: document.getElementById('patternNotes').value,
                 emotion: emotion,
                 checklist: {
                     entryValid: document.getElementById('checkEntry').checked,
@@ -617,7 +701,6 @@
                 await loadTradesFromFirestore();
                 alert('✅ บันทึกการเทรดเรียบร้อย!');
                 resetForm();
-                checkDailyLimit();
             } catch (error) {
                 alert('❌ ไม่สามารถบันทึกข้อมูลได้: ' + error.message);
             }
@@ -662,7 +745,7 @@
             document.getElementById('winRate').textContent = winRate + '%';
             document.getElementById('totalPnL').textContent = (totalPnL >= 0 ? '+' : '') + totalPnL;
             document.getElementById('totalPnL').className = 'text-2xl font-bold ' + (totalPnL >= 0 ? 'text-green-400' : 'text-red-400');
-            document.getElementById('todayTrades').textContent = todayTrades + '/3';
+            document.getElementById('todayTrades').textContent = todayTrades;
 
             // Recent trades table
             const recentTrades = filteredTrades.slice(-10).reverse();
@@ -787,23 +870,6 @@
             return `${year}-W${week}`;
         }
 
-        function checkDailyLimit() {
-            const today = new Date().toISOString().split('T')[0];
-            const todayCount = trades.filter(t => t.date === today).length;
-            const warningBox = document.getElementById('warningBox');
-            const warningText = document.getElementById('warningText');
-
-            if (todayCount >= 3) {
-                warningBox.classList.remove('hidden');
-                warningText.textContent = '⚠️ เทรดครบ 3 ครั้งต่อวันแล้ว หยุดเทรด!';
-            } else if (todayCount >= 2) {
-                warningBox.classList.remove('hidden');
-                warningText.textContent = '📝 เทรดครบ 2 ครั้งแล้ว เหลือ 1 ครั้ง';
-            } else {
-                warningBox.classList.add('hidden');
-            }
-        }
-
         window.setTimeFilter = function(filter) {
             currentTimeFilter = filter;
             document.querySelectorAll('.time-filter').forEach(btn => {
@@ -858,7 +924,6 @@ ${JSON.stringify(trades.slice(-20), null, 2)}
                     await deleteAllTradesFromFirestore();
                     trades = [];
                     updateUI();
-                    checkDailyLimit();
                     alert('✅ ลบข้อมูลเรียบร้อย');
                 } catch (error) {
                     alert('❌ ไม่สามารถลบข้อมูลได้: ' + error.message);
