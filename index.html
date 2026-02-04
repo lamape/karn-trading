@@ -26,6 +26,7 @@
         <div class="text-center">
             <div class="text-6xl mb-4 animate-bounce">🏆</div>
             <p class="text-gray-400">กำลังโหลด...</p>
+            <p id="loadingStatus" class="text-sm text-gray-500 mt-2">กำลังโหลด Firebase SDK...</p>
         </div>
     </div>
 
@@ -300,16 +301,12 @@
             measurementId: "G-GZTE22DT9F"
         };
 
-        // Initialize Firebase
-        let app, auth, db;
+        // Initialize Firebase (global)
         try {
-            app = firebase.initializeApp(firebaseConfig);
-            auth = firebase.auth();
-            db = firebase.firestore();
-            console.log('Firebase initialized successfully');
+            firebase.initializeApp(firebaseConfig);
+            console.log('✅ Firebase initialized');
         } catch (error) {
-            console.error('Firebase initialization error:', error);
-            alert('❌ Firebase initialization failed: ' + error.message);
+            console.error('❌ Firebase initialization error:', error);
         }
 
         // ======================
@@ -319,19 +316,25 @@
         const LOGIN_PASSWORD = 'karn14629';
 
         function checkLogin() {
-            if (!auth) {
-                console.error('Auth not initialized');
-                return;
-            }
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    console.log('User logged in:', user.email);
-                    showMainApp();
-                } else {
-                    console.log('User not logged in');
-                    showLoginScreen();
+            try {
+                if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') {
+                    console.error('❌ Firebase not loaded yet');
+                    setTimeout(checkLogin, 500);
+                    return;
                 }
-            });
+
+                firebase.auth().onAuthStateChanged((user) => {
+                    if (user) {
+                        console.log('✅ User logged in:', user.email);
+                        showMainApp();
+                    } else {
+                        console.log('📝 User not logged in');
+                        showLoginScreen();
+                    }
+                });
+            } catch (error) {
+                console.error('❌ Check login error:', error);
+            }
         }
 
         function showLoginScreen() {
@@ -349,39 +352,52 @@
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
 
-            if (username === 'admin' && password === LOGIN_PASSWORD) {
-                try {
-                    const userCredential = await auth.signInWithEmailAndPassword(LOGIN_EMAIL, LOGIN_PASSWORD);
-                    console.log('Login successful:', userCredential.user.email);
-                } catch (error) {
-                    console.error('Login error:', error);
-                    if (error.code === 'auth/user-not-found') {
-                        alert('❌ User ยังไม่ถูกสร้าง ติดต่อ Cool เพื่อ setup');
-                    } else if (error.code === 'auth/invalid-credential') {
-                        document.getElementById('loginError').classList.remove('hidden');
-                        document.getElementById('loginPassword').value = '';
-                    } else {
-                        alert('❌ เกิดข้อผิดพลาด: ' + error.message);
-                    }
+            try {
+                if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') {
+                    alert('❌ Firebase ยังไม่โหลดเสร็จ รอสักครู่แล้วลองอีกครับ');
+                    return;
                 }
-            } else {
-                document.getElementById('loginError').classList.remove('hidden');
-                document.getElementById('loginPassword').value = '';
+
+                const username = document.getElementById('loginUsername').value;
+                const password = document.getElementById('loginPassword').value;
+
+                if (username === 'admin' && password === LOGIN_PASSWORD) {
+                    try {
+                        const userCredential = await firebase.auth().signInWithEmailAndPassword(LOGIN_EMAIL, LOGIN_PASSWORD);
+                        console.log('✅ Login successful:', userCredential.user.email);
+                    } catch (error) {
+                        console.error('❌ Firebase login error:', error);
+                        if (error.code === 'auth/user-not-found') {
+                            alert('❌ User ยังไม่ถูกสร้าง ติดต่อ Cool เพื่อ setup');
+                        } else if (error.code === 'auth/invalid-credential') {
+                            document.getElementById('loginError').classList.remove('hidden');
+                            document.getElementById('loginPassword').value = '';
+                        } else {
+                            alert('❌ เกิดข้อผิดพลาด: ' + error.message);
+                        }
+                    }
+                } else {
+                    document.getElementById('loginError').classList.remove('hidden');
+                    document.getElementById('loginPassword').value = '';
+                }
+            } catch (error) {
+                console.error('❌ Login form error:', error);
+                alert('❌ เกิดข้อผิดพลาด: ' + error.message);
             }
         });
 
         window.logout = async function() {
             try {
-                await auth.signOut();
-                showLoginScreen();
-                document.getElementById('loginUsername').value = '';
-                document.getElementById('loginPassword').value = '';
-                document.getElementById('loginError').classList.add('hidden');
+                if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') {
+                    await firebase.auth().signOut();
+                    showLoginScreen();
+                    document.getElementById('loginUsername').value = '';
+                    document.getElementById('loginPassword').value = '';
+                    document.getElementById('loginError').classList.add('hidden');
+                }
             } catch (error) {
-                console.error('Logout error:', error);
+                console.error('❌ Logout error:', error);
                 alert('❌ เกิดข้อผิดพลาด: ' + error.message);
             }
         };
@@ -390,12 +406,13 @@
         // FIRESTORE OPERATIONS
         // ======================
         async function loadTradesFromFirestore() {
-            if (!db) {
-                console.error('Firestore not initialized');
-                return;
-            }
             try {
-                const snapshot = await db.collection('trades')
+                if (typeof firebase === 'undefined' || typeof firebase.firestore !== 'function') {
+                    console.error('❌ Firestore not available');
+                    return;
+                }
+
+                const snapshot = await firebase.firestore().collection('trades')
                     .orderBy('date', 'desc')
                     .orderBy('time', 'desc')
                     .get();
@@ -403,36 +420,36 @@
                 snapshot.forEach((doc) => {
                     trades.push({ id: doc.id, ...doc.data() });
                 });
-                console.log('Loaded', trades.length, 'trades');
+                console.log('✅ Loaded', trades.length, 'trades');
                 updateUI();
             } catch (error) {
-                console.error('Error loading trades:', error);
+                console.error('❌ Error loading trades:', error);
                 alert('❌ ไม่สามารถโหลดข้อมูลได้: ' + error.message);
             }
         }
 
         async function saveTradeToFirestore(trade) {
-            if (!db) {
-                console.error('Firestore not initialized');
-                throw new Error('Database not available');
-            }
             try {
-                await db.collection('trades').add(trade);
-                console.log('Trade saved successfully');
+                if (typeof firebase === 'undefined' || typeof firebase.firestore !== 'function') {
+                    throw new Error('Database not available');
+                }
+
+                await firebase.firestore().collection('trades').add(trade);
+                console.log('✅ Trade saved successfully');
             } catch (error) {
-                console.error('Error saving trade:', error);
+                console.error('❌ Error saving trade:', error);
                 throw error;
             }
         }
 
         async function deleteAllTradesFromFirestore() {
-            if (!db) {
-                console.error('Firestore not initialized');
-                throw new Error('Database not available');
-            }
             try {
-                const snapshot = await db.collection('trades').get();
-                const batch = db.batch();
+                if (typeof firebase === 'undefined' || typeof firebase.firestore !== 'function') {
+                    throw new Error('Database not available');
+                }
+
+                const snapshot = await firebase.firestore().collection('trades').get();
+                const batch = firebase.firestore().batch();
 
                 snapshot.forEach((doc) => {
                     batch.delete(doc.ref);
@@ -440,10 +457,10 @@
 
                 if (snapshot.size > 0) {
                     await batch.commit();
-                    console.log('Deleted', snapshot.size, 'trades');
+                    console.log('✅ Deleted', snapshot.size, 'trades');
                 }
             } catch (error) {
-                console.error('Error deleting trades:', error);
+                console.error('❌ Error deleting trades:', error);
                 throw error;
             }
         }
@@ -457,13 +474,29 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, initializing app...');
+            console.log('🚀 DOM loaded');
             setDefaultDateTime();
             initCharts();
-            
-            // Wait a bit for Firebase to initialize
-            setTimeout(() => {
-                checkLogin();
+
+            // Wait for Firebase to load
+            const loadingStatus = document.getElementById('loadingStatus');
+            let checkCount = 0;
+            const maxChecks = 20; // 10 seconds max
+
+            const checkFirebase = setInterval(() => {
+                checkCount++;
+                if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') {
+                    clearInterval(checkFirebase);
+                    loadingStatus.textContent = 'Firebase พร้อม! กำลังตรวจสอบ login...';
+                    console.log('✅ Firebase loaded after', checkCount * 0.5, 'seconds');
+                    setTimeout(() => checkLogin(), 500);
+                } else if (checkCount >= maxChecks) {
+                    clearInterval(checkFirebase);
+                    loadingStatus.textContent = '❌ Firebase โหลดล้มเหลว! โปรดรีเฟรชหน้าเว็บ';
+                    console.error('❌ Firebase failed to load');
+                } else {
+                    loadingStatus.textContent = `กำลังโหลด Firebase SDK... (${checkCount}/${maxChecks})`;
+                }
             }, 500);
         });
 
