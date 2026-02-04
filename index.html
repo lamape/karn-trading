@@ -281,14 +281,15 @@
         </div>
     </div>
 
-    <script type="module">
+    <!-- Firebase SDK (Compat Version) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
         // ======================
         // FIREBASE CONFIG
         // ======================
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
         const firebaseConfig = {
             apiKey: "AIzaSyDI7WZCjOTxVzZjc37NIiRxHD-OV_6w63Y",
             authDomain: "karn-trading-journal.firebaseapp.com",
@@ -300,9 +301,16 @@
         };
 
         // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        let app, auth, db;
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            alert('❌ Firebase initialization failed: ' + error.message);
+        }
 
         // ======================
         // LOGIN SYSTEM
@@ -311,10 +319,16 @@
         const LOGIN_PASSWORD = 'karn14629';
 
         function checkLogin() {
-            onAuthStateChanged(auth, (user) => {
+            if (!auth) {
+                console.error('Auth not initialized');
+                return;
+            }
+            auth.onAuthStateChanged((user) => {
                 if (user) {
+                    console.log('User logged in:', user.email);
                     showMainApp();
                 } else {
+                    console.log('User not logged in');
                     showLoginScreen();
                 }
             });
@@ -340,13 +354,15 @@
 
             if (username === 'admin' && password === LOGIN_PASSWORD) {
                 try {
-                    await signInWithEmailAndPassword(auth, LOGIN_EMAIL, LOGIN_PASSWORD);
+                    const userCredential = await auth.signInWithEmailAndPassword(LOGIN_EMAIL, LOGIN_PASSWORD);
+                    console.log('Login successful:', userCredential.user.email);
                 } catch (error) {
                     console.error('Login error:', error);
                     if (error.code === 'auth/user-not-found') {
                         alert('❌ User ยังไม่ถูกสร้าง ติดต่อ Cool เพื่อ setup');
                     } else if (error.code === 'auth/invalid-credential') {
-                        alert('❌ Username หรือ Password ไม่ถูกต้อง');
+                        document.getElementById('loginError').classList.remove('hidden');
+                        document.getElementById('loginPassword').value = '';
                     } else {
                         alert('❌ เกิดข้อผิดพลาด: ' + error.message);
                     }
@@ -359,7 +375,7 @@
 
         window.logout = async function() {
             try {
-                await signOut(auth);
+                await auth.signOut();
                 showLoginScreen();
                 document.getElementById('loginUsername').value = '';
                 document.getElementById('loginPassword').value = '';
@@ -374,13 +390,20 @@
         // FIRESTORE OPERATIONS
         // ======================
         async function loadTradesFromFirestore() {
+            if (!db) {
+                console.error('Firestore not initialized');
+                return;
+            }
             try {
-                const q = query(collection(db, 'trades'), orderBy('date', 'desc'), orderBy('time', 'desc'));
-                const querySnapshot = await getDocs(q);
+                const snapshot = await db.collection('trades')
+                    .orderBy('date', 'desc')
+                    .orderBy('time', 'desc')
+                    .get();
                 trades = [];
-                querySnapshot.forEach((doc) => {
+                snapshot.forEach((doc) => {
                     trades.push({ id: doc.id, ...doc.data() });
                 });
+                console.log('Loaded', trades.length, 'trades');
                 updateUI();
             } catch (error) {
                 console.error('Error loading trades:', error);
@@ -389,8 +412,13 @@
         }
 
         async function saveTradeToFirestore(trade) {
+            if (!db) {
+                console.error('Firestore not initialized');
+                throw new Error('Database not available');
+            }
             try {
-                await addDoc(collection(db, 'trades'), trade);
+                await db.collection('trades').add(trade);
+                console.log('Trade saved successfully');
             } catch (error) {
                 console.error('Error saving trade:', error);
                 throw error;
@@ -398,17 +426,21 @@
         }
 
         async function deleteAllTradesFromFirestore() {
+            if (!db) {
+                console.error('Firestore not initialized');
+                throw new Error('Database not available');
+            }
             try {
-                const q = query(collection(db, 'trades'));
-                const querySnapshot = await getDocs(q);
-                const batch = writeBatch(db);
+                const snapshot = await db.collection('trades').get();
+                const batch = db.batch();
 
-                querySnapshot.forEach((doc) => {
+                snapshot.forEach((doc) => {
                     batch.delete(doc.ref);
                 });
 
-                if (querySnapshot.size > 0) {
+                if (snapshot.size > 0) {
                     await batch.commit();
+                    console.log('Deleted', snapshot.size, 'trades');
                 }
             } catch (error) {
                 console.error('Error deleting trades:', error);
@@ -425,9 +457,14 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing app...');
             setDefaultDateTime();
             initCharts();
-            checkLogin();
+            
+            // Wait a bit for Firebase to initialize
+            setTimeout(() => {
+                checkLogin();
+            }, 500);
         });
 
         function setDefaultDateTime() {
