@@ -3,88 +3,458 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Firebase User</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Trading Checklist - แบบทดสอบสภาพจิตใจและร่างกาย</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Kanit', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #b8c5d6;
+            font-size: 0.95rem;
+        }
+
+        .question-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .question-number {
+            display: inline-block;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #ffffff;
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #b8c5d6;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .option-btn:hover {
+            background: rgba(0, 217, 255, 0.1);
+            border-color: rgba(0, 217, 255, 0.4);
+            color: #ffffff;
+        }
+
+        .option-btn.selected {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(0, 255, 136, 0.2));
+            border-color: #00d9ff;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 217, 255, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Result Page Styles */
+        .result-page {
+            display: none;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .score-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 20px 0;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .score-label {
+            font-size: 1.2rem;
+            color: #b8c5d6;
+        }
+
+        .message-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            line-height: 1.8;
+        }
+
+        .message-danger {
+            background: rgba(255, 82, 82, 0.2);
+            border: 2px solid #ff5252;
+        }
+
+        .message-success {
+            background: rgba(0, 255, 136, 0.2);
+            border: 2px solid #00ff88;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .reset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #ffffff;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .question-card {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .question-card:nth-child(1) { animation-delay: 0.1s; }
+        .question-card:nth-child(2) { animation-delay: 0.2s; }
+        .question-card:nth-child(3) { animation-delay: 0.3s; }
+        .question-card:nth-child(4) { animation-delay: 0.4s; }
+        .question-card:nth-child(5) { animation-delay: 0.5s; }
+        .question-card:nth-child(6) { animation-delay: 0.6s; }
+        .question-card:nth-child(7) { animation-delay: 0.7s; }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.6rem;
+            }
+            .question-text {
+                font-size: 1rem;
+            }
+            .option-btn {
+                padding: 12px 14px;
+                font-size: 0.9rem;
+            }
+            .score-display {
+                font-size: 3rem;
+            }
+        }
+    </style>
 </head>
-<body class="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-    <div class="bg-gray-800 rounded-2xl p-8 max-w-md w-full text-white">
-        <h1 class="text-2xl font-bold mb-6 text-center">🔐 Create Firebase User</h1>
-
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm text-gray-400 mb-1">Email</label>
-                <input type="email" id="email" value="karn@trading.journal" class="w-full bg-gray-700 rounded-lg px-4 py-3 text-white">
-            </div>
-            <div>
-                <label class="block text-sm text-gray-400 mb-1">Password</label>
-                <input type="password" id="password" value="karn14629" class="w-full bg-gray-700 rounded-lg px-4 py-3 text-white">
+<body>
+    <div class="container">
+        <!-- Quiz Page -->
+        <div id="quizPage">
+            <div class="header">
+                <h1>📊 Trading Checklist</h1>
+                <p>แบบทดสอบสภาพจิตใจและร่างกายก่อนการเทรด</p>
             </div>
 
-            <div class="bg-yellow-900/50 rounded-lg p-4 text-sm">
-                <p class="font-bold text-yellow-400 mb-2">⚠️ Important:</p>
-                <p class="text-gray-300">
-                    หลังจากกด Create แล้ว<br>
-                    1. Delete ไฟล์นี้ทันที<br>
-                    2. User จะใช้ username: <strong class="text-yellow-400">admin</strong><br>
-                    3. Password: <strong class="text-yellow-400">karn14629</strong>
-                </p>
+            <form id="quizForm">
+                <!-- Question 1 -->
+                <div class="question-card">
+                    <span class="question-number">ข้อที่ 1</span>
+                    <p class="question-text">ตอนนี้ใจ "นิ่ง" ไหม?</p>
+                    <div class="options-grid">
+                        <button type="button" class="option-btn" data-question="1" data-score="2">ตื่นเต้น</button>
+                        <button type="button" class="option-btn" data-question="1" data-score="1">ตกใจ</button>
+                        <button type="button" class="option-btn" data-question="1" data-score="0">กลัว</button>
+                        <button type="button" class="option-btn" data-question="1" data-score="3">ดีใจ</button>
+                        <button type="button" class="option-btn" data-question="1" data-score="0">เสียใจ</button>
+                        <button type="button" class="option-btn" data-question="1" data-score="5">ไม่รู้สึกอะไรเลย...ว่าง</button>
+                    </div>
+                </div>
+
+                <!-- Question 2 -->
+                <div class="question-card">
+                    <span class="question-number">ข้อที่ 2</span>
+                    <p class="question-text">อยากกดเพราะ?</p>
+                    <div class="options-grid">
+                        <button type="button" class="option-btn" data-question="2" data-score="5">ตรงแผน</button>
+                        <button type="button" class="option-btn" data-question="2" data-score="0">อยากเอาคืน</button>
+                        <button type="button" class="option-btn" data-question="2" data-score="0">กลัวตกรถ</button>
+                        <button type="button" class="option-btn" data-question="2" data-score="1">เบื่อ</button>
+                        <button type="button" class="option-btn" data-question="2" data-score="2">พราว</button>
+                    </div>
+                </div>
+
+                <!-- Question 3 -->
+                <div class="question-card">
+                    <span class="question-number">ข้อที่ 3</span>
+                    <p class="question-text">ถ้าแพ้ โดน SL จะรู้สึกยังไง?</p>
+                    <div class="options-grid">
+                        <button type="button" class="option-btn" data-question="3" data-score="0">แค้น</button>
+                        <button type="button" class="option-btn" data-question="3" data-score="0">อยากเอาคืน</button>
+                        <button type="button" class="option-btn" data-question="3" data-score="0">โกรธตัวเอง</button>
+                        <button type="button" class="option-btn" data-question="3" data-score="0">เสียดาย</button>
+                        <button type="button" class="option-btn" data-question="3" data-score="0">ดูถูกตัวเอง</button>
+                        <button type="button" class="option-btn" data-question="3" data-score="0">ด่าตัวเอง</button>
+                        <button type="button" class="option-btn" data-question="3" data-score="4">ยอมรับได้</button>
+                        <button type="button" class="option-btn" data-question="3" data-score="5">ชิวๆสบายๆ</button>
+                    </div>
+                </div>
+
+                <!-- Question 4 -->
+                <div class="question-card">
+                    <span class="question-number">ข้อที่ 4</span>
+                    <p class="question-text">ร่างกายเป็นยังไง?</p>
+                    <div class="options-grid">
+                        <button type="button" class="option-btn" data-question="4" data-score="0">เกร็ง</button>
+                        <button type="button" class="option-btn" data-question="4" data-score="0">หายใจแรง</button>
+                        <button type="button" class="option-btn" data-question="4" data-score="0">ใจเต้นแรง</button>
+                        <button type="button" class="option-btn" data-question="4" data-score="0">เหนื่อย</button>
+                        <button type="button" class="option-btn" data-question="4" data-score="0">อ่อนล้า</button>
+                        <button type="button" class="option-btn" data-question="4" data-score="1">ง่วง</button>
+                        <button type="button" class="option-btn" data-question="4" data-score="4">สบายตัว</button>
+                        <button type="button" class="option-btn" data-question="4" data-score="5">ชิวๆ</button>
+                    </div>
+                </div>
+
+                <!-- Question 5 -->
+                <div class="question-card">
+                    <span class="question-number">ข้อที่ 5</span>
+                    <p class="question-text">เทรดเพื่ออะไร?</p>
+                    <div class="options-grid">
+                        <button type="button" class="option-btn" data-question="5" data-score="0">พิสูจน์ตัวเอง</button>
+                        <button type="button" class="option-btn" data-question="5" data-score="0">เอาทุนคืน</button>
+                        <button type="button" class="option-btn" data-question="5" data-score="0">คันมือ</button>
+                        <button type="button" class="option-btn" data-question="5" data-score="5">ตรงแผน</button>
+                    </div>
+                </div>
+
+                <!-- Question 6 -->
+                <div class="question-card">
+                    <span class="question-number">ข้อที่ 6</span>
+                    <p class="question-text">ถ้าไม่กดไม้นี้...รู้สึกยังไง?</p>
+                    <div class="options-grid">
+                        <button type="button" class="option-btn" data-question="6" data-score="0">รู้สึกผิด...เสียดาย</button>
+                        <button type="button" class="option-btn" data-question="6" data-score="5">รู้สึกไม่เป็นไรหรอก...ชั่งมัน</button>
+                    </div>
+                </div>
+
+                <!-- Question 7 -->
+                <div class="question-card">
+                    <span class="question-number">ข้อที่ 7</span>
+                    <p class="question-text">สัญญาได้ไหม ถ้ากราฟย้อน จะไม่เข้าต่อ?</p>
+                    <div class="options-grid">
+                        <button type="button" class="option-btn" data-question="7" data-score="5">ได้ดิ...สัญญา</button>
+                        <button type="button" class="option-btn" data-question="7" data-score="2">ไม่มั่นใจอ่ะ</button>
+                        <button type="button" class="option-btn" data-question="7" data-score="0">ไม่สัญญา</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">ดูผลลัพธ์</button>
+            </form>
+        </div>
+
+        <!-- Result Page -->
+        <div id="resultPage" class="result-page">
+            <div class="result-card">
+                <h1 style="font-size: 1.8rem; margin-bottom: 20px;">📊 ผลลัพธ์ Trading Checklist</h1>
+                <p class="score-label">คะแนนรวม</p>
+                <div class="score-display" id="scoreDisplay">0</div>
+                <p class="score-label">จาก 35 คะแนน</p>
+                <div class="message-box" id="messageBox"></div>
+                <button type="button" class="reset-btn" id="resetBtn">🔄 เริ่มทำแบบทดสอบใหม่</button>
             </div>
-
-            <button onclick="createUser()" class="w-full bg-green-500 hover:bg-green-600 text-black font-bold py-3 rounded-lg transition-all">
-                ✅ Create User
-            </button>
-
-            <div id="result" class="hidden"></div>
         </div>
     </div>
 
-    <!-- Firebase SDK (Compat Version) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDI7WZCjOTxVzZjc37NIiRxHD-OV_6w63Y",
-            authDomain: "karn-trading-journal.firebaseapp.com",
-            projectId: "karn-trading-journal",
-            storageBucket: "karn-trading-journal.firebasestorage.app",
-            messagingSenderId: "585098365762",
-            appId: "1:585098365762:web:3e534ffbf6afe1cb5e16db",
-            measurementId: "G-GZTE22DT9F"
-        };
+        const answers = {};
+        const totalQuestions = 7;
 
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+        // Handle option selection
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const question = this.dataset.question;
+                const score = parseInt(this.dataset.score);
 
-        window.createUser = async function() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const resultDiv = document.getElementById('result');
+                // Remove selected from other options in same question
+                document.querySelectorAll(`.option-btn[data-question="${question}"]`).forEach(b => {
+                    b.classList.remove('selected');
+                });
 
-            try {
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const user = userCredential.user;
+                // Add selected to clicked option
+                this.classList.add('selected');
 
-                resultDiv.classList.remove('hidden');
-                resultDiv.className = 'bg-green-900/50 rounded-lg p-4 text-green-400';
-                resultDiv.innerHTML = `
-                    <p class="font-bold">✅ Success!</p>
-                    <p>User created: ${user.email}</p>
-                    <p class="text-sm text-gray-300 mt-2">
-                        ตอนนี้ login ได้แล้วที่:<br>
-                        <strong>username:</strong> admin<br>
-                        <strong>password:</strong> karn14629
-                    </p>
-                `;
-            } catch (error) {
-                resultDiv.classList.remove('hidden');
-                resultDiv.className = 'bg-red-900/50 rounded-lg p-4 text-red-400';
-                resultDiv.innerHTML = `
-                    <p class="font-bold">❌ Error:</p>
-                    <p>${error.message}</p>
-                `;
+                // Store answer
+                answers[question] = score;
+
+                // Enable/disable submit button
+                updateSubmitButton();
+            });
+        });
+
+        function updateSubmitButton() {
+            const answeredQuestions = Object.keys(answers).length;
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = answeredQuestions !== totalQuestions;
+        }
+
+        // Handle form submission
+        document.getElementById('quizForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Calculate total score
+            let totalScore = 0;
+            for (let i = 1; i <= totalQuestions; i++) {
+                totalScore += answers[i] || 0;
             }
-        };
+
+            // Display result
+            displayResult(totalScore);
+        });
+
+        function displayResult(score) {
+            // Hide quiz, show result
+            document.getElementById('quizPage').style.display = 'none';
+            document.getElementById('resultPage').style.display = 'block';
+
+            // Update score display
+            document.getElementById('scoreDisplay').textContent = score;
+
+            // Get message box and add appropriate class
+            const messageBox = document.getElementById('messageBox');
+            messageBox.className = 'message-box';
+
+            if (score < 25) {
+                messageBox.classList.add('message-danger');
+                messageBox.innerHTML = '🛑 <strong>ตอนนี้สภาวะจิตใจและร่างกายของคุณยังไม่พร้อมสำหรับการเทรด</strong><br><br>หยุดเดี๋ยวนี้!!! ปิดจอ หายใจเข้า-ออก ลึกๆ';
+            } else {
+                messageBox.classList.add('message-success');
+                messageBox.innerHTML = '✅ <strong>ยินดีด้วย!!! สภาวะจิตใจและร่างกายของคุณ พร้อมเทรดแล้ว</strong><br><br>ลุยเลย แล้วอย่าลืมสัญญาที่ให้ไว้นะ ถ้าโดน SL แล้วอย่าดิ่ง อย่าเอาคืน เข้าใจไหม!!!';
+            }
+        }
+
+        // Handle reset button
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            // Reset answers
+            Object.keys(answers).forEach(key => delete answers[key]);
+
+            // Remove all selected classes
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+
+            // Reset submit button
+            updateSubmitButton();
+
+            // Show quiz, hide result
+            document.getElementById('resultPage').style.display = 'none';
+            document.getElementById('quizPage').style.display = 'block';
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+        });
     </script>
 </body>
 </html>
