@@ -747,8 +747,13 @@
             document.getElementById('totalPnL').className = 'text-2xl font-bold ' + (totalPnL >= 0 ? 'text-green-400' : 'text-red-400');
             document.getElementById('todayTrades').textContent = todayTrades;
 
-            // Recent trades table
-            const recentTrades = filteredTrades.slice(-10).reverse();
+            // Recent trades table - sort by date desc, time desc, then take 10
+            const sortedTrades = [...filteredTrades].sort((a, b) => {
+                const dateA = new Date(a.date + 'T' + a.time);
+                const dateB = new Date(b.date + 'T' + b.time);
+                return dateB - dateA; // Newest first
+            });
+            const recentTrades = sortedTrades.slice(0, 10);
             const tbody = document.getElementById('recentTrades');
             if (recentTrades.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">ยังไม่มีข้อมูล</td></tr>';
