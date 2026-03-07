@@ -499,19 +499,19 @@
                 date: document.getElementById('date').value,
                 time: document.getElementById('time').value,
                 direction: document.getElementById('direction').value,
-                result: document.getElementById('result').value,
                 entry: parseFloat(document.getElementById('entry').value),
                 sl: parseFloat(document.getElementById('sl').value) || null,
                 tp: parseFloat(document.getElementById('tp').value) || null,
+                result: document.getElementById('result').value,
                 pips: parseFloat(document.getElementById('pips').value),
                 reason: document.getElementById('reason').value,
                 emotion: document.querySelector('input[name="emotion"]:checked')?.value || '',
-                checklist: {
+                checklist: JSON.stringify({
                     signal: document.getElementById('chk1').checked,
                     sl: document.getElementById('chk2').checked,
                     tp: document.getElementById('chk3').checked,
                     rr: document.getElementById('chk4').checked
-                },
+                }),
                 notes: document.getElementById('notes').value
             };
 
