@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAUUSD Trading Journal 💰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .input-dark { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); }
+        .input-dark:focus { border-color: #fbbf24; outline: none; }
+        .btn-gold { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(251,191,36,0.3); }
+        .table-row:hover { background: rgba(251,191,36,0.1); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(251,191,36,0.5); border-radius: 4px; }
+        .hidden { display: none !important; }
+        .checkbox-item input:checked + div {
+            background: #fbbf24;
+            color: #000;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="min-h-screen flex items-center justify-center">
+        <div class="text-center">
+            <div class="text-6xl mb-4 animate-bounce">🏆</div>
+            <p class="text-gray-400">กำลังโหลด...</p>
+            <p id="loadingStatus" class="text-sm text-gray-500 mt-2">กรอก Google Apps Script URL</p>
+            <p id="errorStatus" class="text-sm text-red-400 mt-2 hidden"></p>
+        </div>
+    </div>
+
+    <!-- API Config Screen -->
+    <div id="configScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass rounded-2xl p-8 max-w-lg w-full">
+            <div class="text-center mb-8">
+                <div class="text-6xl mb-4">🔗</div>
+                <h1 class="text-3xl font-bold mb-2">ตั้งค่า Google Sheets</h1>
+                <p class="text-gray-400">กรอก URL จาก Google Apps Script</p>
+            </div>
+            <form id="configForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Google Apps Script URL</label>
+                    <input type="url" id="apiUrl" class="w-full input-dark rounded-lg px-4 py-3 text-white" 
+                           placeholder="https://script.google.com/macros/s/YOUR_ID/exec" required>
+                </div>
+                <button type="submit" class="w-full btn-gold text-black font-bold py-3 rounded-lg transition-all">
+                    🔗 เชื่อมต่อ
+                </button>
+            </form>
+            <div class="mt-6 p-4 bg-blue-900/30 rounded-lg">
+                <p class="text-sm text-blue-300">
+                    <strong>💡 วิธีหา URL:</strong><br>
+                    1. สร้าง Google Sheet<br>
+                    2. Extensions → Apps Script<br>
+                    3. Deploy → Web App<br>
+                    4. Copy URL ที่ได้ (ต้องมี /exec)
+                </p>
+            </div>
+            <div class="mt-4 p-4 bg-red-900/30 rounded-lg">
+                <p class="text-sm text-red-300">
+                    <strong>⚠️ สำคัญ:</strong><br>
+                    - URL ต้องลงท้ายด้วย /exec<br>
+                    - ไม่ใช่ /dev หรือ /edit
+                    - ไม่ต้องมี Local Storage
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <div class="container mx-auto px-4 py-8 max-w-7xl">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <div class="text-center flex-1">
+                    <h1 class="text-4xl font-bold mb-2">🏆 XAUUSD Trading Journal</h1>
+                    <p class="text-gray-400">บันทึกการเทรด วิเคราะห์ และพัฒนาทักษะ</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="showConfig()" class="glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black transition-all">
+                        ⚙️ ตั้งค่า
+                    </button>
+                    <button onclick="exportData()" class="glass px-4 py-2 rounded-lg hover:bg-green-500 hover:text-black transition-all">
+                        📤 Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-1">📊</div>
+                    <div class="text-2xl font-bold text-yellow-400" id="totalTrades">0</div>
+                    <div class="text-sm text-gray-400">เทรดทั้งหมด</div>
+                </div>
+                <div class="glass rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-1">🎯</div>
+                    <div class="text-2xl font-bold text-green-400" id="winRate">0%</div>
+                    <div class="text-sm text-gray-400">Win Rate</div>
+                </div>
+                <div class="glass rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-1">💰</div>
+                    <div class="text-2xl font-bold" id="totalPnL">0</div>
+                    <div class="text-sm text-gray-400">P&L (จุด)</div>
+                </div>
+                <div class="glass rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-1">📅</div>
+                    <div class="text-2xl font-bold text-blue-400" id="todayTrades">0</div>
+                    <div class="text-sm text-gray-400">วันนี้</div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column - Form -->
+                <div class="space-y-6">
+                    <!-- Trade Entry Form -->
+                    <div class="glass rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-4 flex items-center">
+                            <span class="mr-2">📝</span> บันทึกการเทรด
+                        </h2>
+                        <form id="tradeForm" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">Date</label>
+                                    <input type="date" id="date" class="w-full input-dark rounded-lg px-4 py-3 text-white" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">Time</label>
+                                    <input type="time" id="time" class="w-full input-dark rounded-lg px-4 py-3 text-white" required>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">Direction</label>
+                                    <select id="direction" class="w-full input-dark rounded-lg px-4 py-3 text-white" required>
+                                        <option value="Long">Long (ซื้อ)</option>
+                                        <option value="Short">Short (ขาย)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">Result</label>
+                                    <select id="result" class="w-full input-dark rounded-lg px-4 py-3 text-white" required onchange="calculatePips()">
+                                        <option value="Win">Win (ชนะ)</option>
+                                        <option value="Loss">Loss (แพ้)</option>
+                                        <option value="BE">BE (เสมอ)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">Entry</label>
+                                    <input type="number" id="entry" step="0.01" class="w-full input-dark rounded-lg px-4 py-3 text-white" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">SL</label>
+                                    <input type="number" id="sl" step="0.01" class="w-full input-dark rounded-lg px-4 py-3 text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">TP</label>
+                                    <input type="number" id="tp" step="0.01" class="w-full input-dark rounded-lg px-4 py-3 text-white">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Pips (จุด)</label>
+                                <input type="number" id="pips" step="1" class="w-full input-dark rounded-lg px-4 py-3 text-white" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Reason (เหตุผล)</label>
+                                <select id="reason" class="w-full input-dark rounded-lg px-4 py-3 text-white" required>
+                                    <option value="">-- เลือกเหตุผล --</option>
+                                    <option value="Engulfing Pattern">Engulfing Pattern</option>
+                                    <option value="Breakout S/R">Breakout S/R</option>
+                                    <option value="Trend Following">Trend Following</option>
+                                    <option value="News Trading">News Trading</option>
+                                    <option value="Price Action">Price Action</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Emotion (สภาพอารมณ์)</label>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="radio" name="emotion" value="Happy" class="hidden" required>
+                                        <div class="glass rounded-lg p-3 text-center hover:bg-yellow-500 hover:text-black transition-all">
+                                            <div class="text-2xl mb-1">😊</div>
+                                            <div class="text-xs">Happy</div>
+                                        </div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="radio" name="emotion" value="Focused" class="hidden">
+                                        <div class="glass rounded-lg p-3 text-center hover:bg-yellow-500 hover:text-black transition-all">
+                                            <div class="text-2xl mb-1">😎</div>
+                                            <div class="text-xs">Focused</div>
+                                        </div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="radio" name="emotion" value="Stressed" class="hidden">
+                                        <div class="glass rounded-lg p-3 text-center hover:bg-yellow-500 hover:text-black transition-all">
+                                            <div class="text-2xl mb-1">😰</div>
+                                            <div class="text-xs">Stressed</div>
+                                        </div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer">
+                                        <input type="radio" name="emotion" value="Tired" class="hidden">
+                                        <div class="glass rounded-lg p-3 text-center hover:bg-yellow-500 hover:text-black transition-all">
+                                            <div class="text-2xl mb-1">😴</div>
+                                            <div class="text-xs">Tired</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Checklist (ก่อนเทรด)</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="checkbox-item cursor-pointer flex items-center space-x-2">
+                                        <input type="checkbox" class="hidden" id="chk1">
+                                        <div class="glass rounded px-3 py-2 text-sm hover:bg-yellow-500 hover:text-black transition-all">
+                                            ✅ Signal Valid
+                                        </div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer flex items-center space-x-2">
+                                        <input type="checkbox" class="hidden" id="chk2">
+                                        <div class="glass rounded px-3 py-2 text-sm hover:bg-yellow-500 hover:text-black transition-all">
+                                            ✅ SL ≤ 500 จุด
+                                        </div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer flex items-center space-x-2">
+                                        <input type="checkbox" class="hidden" id="chk3">
+                                        <div class="glass rounded px-3 py-2 text-sm hover:bg-yellow-500 hover:text-black transition-all">
+                                            ✅ TP Valid
+                                        </div>
+                                    </label>
+                                    <label class="checkbox-item cursor-pointer flex items-center space-x-2">
+                                        <input type="checkbox" class="hidden" id="chk4">
+                                        <div class="glass rounded px-3 py-2 text-sm hover:bg-yellow-500 hover:text-black transition-all">
+                                            ✅ RR ≥ 1:2
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Notes (บันทึกเพิ่มเติม)</label>
+                                <textarea id="notes" rows="3" class="w-full input-dark rounded-lg px-4 py-3 text-white" 
+                                          placeholder="บันทึกสิ่งที่สำคัญ..."></textarea>
+                            </div>
+
+                            <button type="submit" class="w-full btn-gold text-black font-bold py-4 rounded-lg transition-all text-lg">
+                                💾 บันทึกการเทรด
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="space-y-6">
+                    <!-- Charts -->
+                    <div class="glass rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-4 flex items-center">
+                            <span class="mr-2">📈</span> กราฟ P&L
+                        </h2>
+                        <canvas id="pnlChart"></canvas>
+                    </div>
+
+                    <div class="glass rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-4 flex items-center">
+                            <span class="mr-2">🎯</span> Win Rate รายสัปดาห์
+                        </h2>
+                        <canvas id="winRateChart"></canvas>
+                    </div>
+
+                    <!-- Recent Trades -->
+                    <div class="glass rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-4 flex items-center">
+                            <span class="mr-2">📋</span> ประวัติล่าสุด (10 รายการ)
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-400 border-b border-gray-700">
+                                        <th class="text-left py-2">วัน/เวลา</th>
+                                        <th class="text-left py-2">Dir</th>
+                                        <th class="text-right py-2">Pips</th>
+                                        <th class="text-center py-2">ผล</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentTrades">
+                                    <tr><td colspan="4" class="text-center py-4 text-gray-500">ยังไม่มีข้อมูล</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-8 flex flex-wrap gap-4 justify-center">
+                <button onclick="loadTrades()" class="glass px-6 py-3 rounded-lg hover:bg-blue-500 hover:text-black transition-all">
+                    🔄 Reload Data
+                </button>
+                <button onclick="clearData()" class="glass px-6 py-3 rounded-lg hover:bg-red-500 hover:text-white transition-all">
+                    🗑️ Clear All Data
+                </button>
+                <button onclick="askCoolToAnalyze()" class="btn-gold text-black px-6 py-3 rounded-lg font-bold">
+                    🤖 Ask Cool to Analyze
+                </button>
+            </div>
+
+            <!-- Time Filter -->
+            <div class="mt-6 flex justify-center gap-2">
+                <button onclick="setTimeFilter('day')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="day">วัน</button>
+                <button onclick="setTimeFilter('week')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="week">สัปดาห์</button>
+                <button onclick="setTimeFilter('month')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="month">เดือน</button>
+                <button onclick="setTimeFilter('year')" class="time-filter glass px-4 py-2 rounded-lg hover:bg-yellow-500 hover:text-black" data-filter="year">ปี</button>
+                <button onclick="setTimeFilter('all')" class="time-filter glass px-4 py-2 rounded-lg bg-yellow-500 text-black" data-filter="all">ทั้งหมด</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ======================
+        // GOOGLE SHEETS API
+        // ======================
+        let API_URL = '';
+        let trades = [];
+        let currentTimeFilter = 'all';
+        let pnlChart, winRateChart;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 DOM loaded');
+            setDefaultDateTime();
+            initCharts();
+            
+            // เปิดหน้าจอ config ทันที (ไม่ใช้ LocalStorage)
+            showConfigScreen();
+        });
+
+        function showConfigScreen() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('configScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function showMainApp() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('configScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+        }
+
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = document.getElementById('apiUrl').value.trim();
+            
+            // ✅ ตรวจสอบว่ามี /exec
+            if (!url.includes('/exec')) {
+                alert('❌ URL ไม่ถูกต้อง!\n\nURL ต้องลงท้ายด้วย /exec\n\nตัวอย่างที่ถูก:\nhttps://script.google.com/macros/s/ID/exec\n\nตัวอย่างที่ผิด:\nhttps://script.google.com/macros/s/ID/dev');
+                return;
+            }
+            
+            API_URL = url;
+            updateStatus('กำลังเชื่อมต่อ...');
+            
+            await loadTrades();
+            
+            if (trades.length > 0) {
+                showMainApp();
+            }
+        });
+
+        window.showConfig = function() {
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('configScreen').classList.remove('hidden');
+        };
+
+        async function callGoogleSheetsAPI(action, data = null) {
+            try {
+                const response = await fetch(API_URL + '?action=' + action, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                    body: JSON.stringify({ action, data })
+                });
+                
+                return { success: true };
+            } catch (error) {
+                console.error('❌ API Error:', error);
+                throw error;
+            }
+        }
+
+        async function loadTrades() {
+            try {
+                updateStatus('กำลังโหลดข้อมูล...');
+                showProgress(true);
+                
+                const response = await fetch(API_URL + '?action=read');
+                const result = await response.json();
+                
+                if (result.success) {
+                    trades = result.data || [];
+                    console.log('✅ Loaded', trades.length, 'trades');
+                    
+                    updateStatus('โหลดข้อมูลสำเร็จ! ' + trades.length + ' trades');
+                    showProgress(false);
+                    
+                    if (trades.length > 0) {
+                        showMainApp();
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to load trades');
+                }
+            } catch (error) {
+                console.error('❌ Error loading trades:', error);
+                updateStatus('❌ เกิดข้อผิดพลาด: ' + error.message);
+                document.getElementById('errorStatus').classList.remove('hidden');
+                document.getElementById('errorStatus').textContent = error.message;
+                showProgress(false);
+            }
+        }
+
+        // ======================
+        // TRADE FORM
+        // ======================
+        document.getElementById('tradeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const tradeData = {
+                id: generateId(),
+                date: document.getElementById('date').value,
+                time: document.getElementById('time').value,
+                direction: document.getElementById('direction').value,
+                result: document.getElementById('result').value,
+                entry: parseFloat(document.getElementById('entry').value),
+                sl: parseFloat(document.getElementById('sl').value) || null,
+                tp: parseFloat(document.getElementById('tp').value) || null,
+                pips: parseFloat(document.getElementById('pips').value),
+                reason: document.getElementById('reason').value,
+                emotion: document.querySelector('input[name="emotion"]:checked')?.value || '',
+                checklist: {
+                    signal: document.getElementById('chk1').checked,
+                    sl: document.getElementById('chk2').checked,
+                    tp: document.getElementById('chk3').checked,
+                    rr: document.getElementById('chk4').checked
+                },
+                notes: document.getElementById('notes').value
+            };
+            
+            // Validate SL ≤ 500
+            if (tradeData.result === 'Loss') {
+                const direction = tradeData.direction;
+                const entry = tradeData.entry;
+                const sl = tradeData.sl;
+                let slDistance = 0;
+                
+                if (direction === 'Long') {
+                    slDistance = (sl - entry) * 100;
+                } else {
+                    slDistance = (entry - sl) * 100;
+                }
+                
+                if (slDistance > 500) {
+                    alert('⚠️ SL เกิน 500 จุด! ควรเทรดให้เหมาะสมกับวินัย');
+                    return;
+                }
+            }
+            
+            try {
+                await callGoogleSheetsAPI('add', tradeData);
+                trades.push(tradeData);
+                updateUI();
+                
+                // Reset form
+                document.getElementById('tradeForm').reset();
+                setDefaultDateTime();
+                
+                alert('✅ บันทึกการเทรดสำเร็จ!');
+            } catch (error) {
+                alert('❌ ไม่สามารถบันทึกได้: ' + error.message);
+            }
+        });
+
+        function setDefaultDateTime() {
+            const now = new Date();
+            const dateInput = document.getElementById('date');
+            const timeInput = document.getElementById('time');
+            if (dateInput && timeInput) {
+                dateInput.value = now.toISOString().split('T')[0];
+                timeInput.value = now.toTimeString().slice(0, 5);
+            }
+        }
+
+        function calculatePips() {
+            const direction = document.getElementById('direction').value;
+            const result = document.getElementById('result').value;
+            const entry = parseFloat(document.getElementById('entry').value);
+            const sl = parseFloat(document.getElementById('sl').value);
+            const tp = parseFloat(document.getElementById('tp').value);
+
+            const pipsInput = document.getElementById('pips');
+
+            if (!entry || isNaN(entry)) {
+                pipsInput.value = '';
+                return;
+            }
+
+            let pips = 0;
+
+            if (result === 'BE') {
+                pips = 0;
+            } else if (result === 'Win') {
+                if (!tp || isNaN(tp)) {
+                    pipsInput.value = '';
+                    return;
+                }
+                if (direction === 'Long') {
+                    pips = (tp - entry) * 100;
+                } else {
+                    pips = (entry - tp) * 100;
+                }
+            } else if (result === 'Loss') {
+                if (!sl || isNaN(sl)) {
+                    pipsInput.value = '';
+                    return;
+                }
+                if (direction === 'Long') {
+                    pips = (sl - entry) * 100;
+                } else {
+                    pips = (entry - sl) * 100;
+                }
+            }
+
+            pipsInput.value = Math.round(pips);
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        // ======================
+        // UI UPDATE
+        // ======================
+        function updateUI() {
+            updateStats();
+            updateCharts();
+            updateRecentTrades();
+        }
+
+        function updateStats() {
+            const filteredTrades = getFilteredTrades();
+            
+            document.getElementById('totalTrades').textContent = filteredTrades.length;
+            
+            const wins = filteredTrades.filter(t => t.result === 'Win').length;
+            const winRate = filteredTrades.length > 0 ? (wins / filteredTrades.length * 100).toFixed(1) : 0;
+            document.getElementById('winRate').textContent = winRate + '%';
+            
+            const totalPnL = filteredTrades.reduce((sum, t) => sum + (t.pips || 0), 0);
+            document.getElementById('totalPnL').textContent = totalPnL;
+            document.getElementById('totalPnL').className = 'text-2xl font-bold ' + (totalPnL >= 0 ? 'text-green-400' : 'text-red-400');
+            
+            const today = new Date().toISOString().split('T')[0];
+            const todayTrades = filteredTrades.filter(t => t.Date === today || t.date === today).length;
+            document.getElementById('todayTrades').textContent = todayTrades;
+        }
+
+        function getFilteredTrades() {
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            
+            return trades.filter(t => {
+                const tradeDate = t.Date || t.date;
+                
+                if (currentTimeFilter === 'day') {
+                    return tradeDate === today;
+                } else if (currentTimeFilter === 'week') {
+                    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                    return tradeDate >= weekAgo.toISOString().split('T')[0];
+                } else if (currentTimeFilter === 'month') {
+                    const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+                    return tradeDate >= monthAgo.toISOString().split('T')[0];
+                } else if (currentTimeFilter === 'year') {
+                    return tradeDate.startsWith(now.getFullYear().toString());
+                }
+                return true;
+            });
+        }
+
+        function updateCharts() {
+            const filteredTrades = getFilteredTrades();
+            
+            // Sort trades by date
+            const sortedTrades = [...filteredTrades].sort((a, b) => {
+                const dateA = new Date((a.Date || a.date) + 'T' + (a.Time || a.time));
+                const dateB = new Date((b.Date || b.date) + 'T' + (b.Time || b.time));
+                return dateA - dateB;
+            });
+            
+            // P&L Chart (Cumulative)
+            let cumulative = 0;
+            const pnlData = sortedTrades.map(t => {
+                cumulative += t.pips || 0;
+                return cumulative;
+            });
+            
+            pnlChart.data.labels = sortedTrades.map(t => (t.Date || t.date).slice(5));
+            pnlChart.data.datasets[0].data = pnlData;
+            pnlChart.update();
+            
+            // Win Rate by Week
+            const weekStats = {};
+            sortedTrades.forEach(t => {
+                const week = getWeekNumber(t.Date || t.date);
+                if (!weekStats[week]) {
+                    weekStats[week] = { wins: 0, total: 0 };
+                }
+                weekStats[week].total++;
+                if (t.result === 'Win') weekStats[week].wins++;
+            });
+            
+            const weeks = Object.keys(weekStats);
+            const winRates = weeks.map(w => ((weekStats[w].wins / weekStats[w].total) * 100).toFixed(1));
+            const colors = winRates.map(r => r >= 50 ? 'rgba(34,197,94,0.8)' : 'rgba(239,68,68,0.8)');
+            
+            winRateChart.data.labels = weeks;
+            winRateChart.data.datasets[0].data = winRates;
+            winRateChart.data.datasets[0].backgroundColor = colors;
+            winRateChart.update();
+        }
+
+        function getWeekNumber(dateStr) {
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const week = Math.ceil((date - new Date(year, 0, 1)) / (7 * 24 * 60 * 60 * 1000));
+            return `${year}-W${week}`;
+        }
+
+        function updateRecentTrades() {
+            const tbody = document.getElementById('recentTrades');
+            const recentTrades = trades.slice(0, 10);
+            
+            if (recentTrades.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">ยังไม่มีข้อมูล</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = recentTrades.map(t => {
+                const resultClass = t.result === 'Win' ? 'text-green-400' : (t.result === 'Loss' ? 'text-red-400' : 'text-yellow-400');
+                const resultIcon = t.result === 'Win' ? '✅' : (t.result === 'Loss' ? '❌' : '⭕');
+                return `
+                    <tr class="table-row border-b border-gray-800">
+                        <td class="py-2">${(t.Date || t.date).slice(5)}<br><span class="text-gray-400">${t.Time || t.time}</span></td>
+                        <td class="py-2">${t.direction === 'Long' ? '🟢' : '🔴'}</td>
+                        <td class="py-2 text-right ${t.pips >= 0 ? 'text-green-400' : 'text-red-400'}">${t.pips}</td>
+                        <td class="py-2 text-center ${resultClass}">${resultIcon}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ======================
+        // CHARTS
+        // ======================
+        function initCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: '#fbbf24',
+                        bodyColor: '#fff',
+                        borderColor: '#fbbf24',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { color: '#9ca3af' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { color: '#9ca3af' }
+                    }
+                }
+            };
+
+            // P&L Chart
+            const pnlCtx = document.getElementById('pnlChart').getContext('2d');
+            pnlChart = new Chart(pnlCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'P&L (จุด)',
+                        data: [],
+                        borderColor: '#fbbf24',
+                        backgroundColor: 'rgba(251,191,36,0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Win Rate Chart
+            const winRateCtx = document.getElementById('winRateChart').getContext('2d');
+            winRateChart = new Chart(winRateCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Win Rate %',
+                        data: [],
+                        backgroundColor: [],
+                        borderColor: [],
+                        borderWidth: 1
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+
+        // ======================
+        // ACTIONS
+        // ======================
+        window.setTimeFilter = function(filter) {
+            currentTimeFilter = filter;
+            document.querySelectorAll('.time-filter').forEach(btn => {
+                btn.classList.remove('bg-yellow-500', 'text-black');
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('bg-yellow-500', 'text-black');
+                }
+            });
+            updateUI();
+        };
+
+        window.exportData = function() {
+            const data = JSON.stringify(trades, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'xauusd_trades_' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        window.askCoolToAnalyze = function() {
+            if (trades.length === 0) {
+                alert('❌ ยังไม่มีข้อมูลให้วิเคราะห์');
+                return;
+            }
+
+            const summary = `
+📊 สรุปข้อมูลการเทรด XAUUSD:
+
+${trades.length} trades ทั้งหมด
+Total P&L: ${trades.reduce((sum, t) => sum + (t.pips || 0), 0)} จุด
+Win Rate: ${(trades.filter(t => t.result === 'Win').length / trades.length * 100).toFixed(1)}%
+
+Data JSON:
+${JSON.stringify(trades.slice(-20), null, 2)}
+
+โปรดวิเคราะห์: 1) Pattern การเทรด 2) สภาพอารมณ์ vs ผล 3) แนะนำการปรับปรุง
+            `;
+
+            navigator.clipboard.writeText(summary).then(() => {
+                alert('✅ Data ถูก copy ไป clipboard แล้ว!\n\nส่งให้ผมใน Telegram และบอก "วิเคราะห์ data ให้หน่อย"');
+            }).catch(() => {
+                alert('❌ ไม่สามารถ copy data ได้ ลอง export JSON แทน');
+            });
+        };
+
+        window.clearData = async function() {
+            if (confirm('⚠️ ต้องการลบข้อมูลทั้งหมดหรือไม่? นี่จะลบข้อมูลใน Google Sheets ด้วย!')) {
+                try {
+                    await callGoogleSheetsAPI('clear');
+                    trades = [];
+                    updateUI();
+                    alert('✅ ลบข้อมูลเรียบร้อย');
+                } catch (error) {
+                    alert('❌ ไม่สามารถลบข้อมูลได้: ' + error.message);
+                }
+            }
+        };
+
+        function updateStatus(message) {
+            const status = document.getElementById('loadingStatus');
+            if (status) {
+                status.textContent = message;
+            }
+        }
+
+        function showProgress(show) {
+            const progressDiv = document.createElement('div');
+            progressDiv.id = 'progressDiv';
+            progressDiv.className = 'mt-4 p-4 bg-gray-800 rounded-lg';
+            progressDiv.innerHTML = '<div class="animate-pulse">⏳ กำลังประมวณผล...</div>';
+            
+            const loadingScreen = document.getElementById('loadingScreen');
+            
+            if (show) {
+                loadingScreen.appendChild(progressDiv);
+            } else {
+                const existing = document.getElementById('progressDiv');
+                if (existing) {
+                    existing.remove();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

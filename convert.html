@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Convert Firebase JSON to CSV</title>
+    <script>
+        function convertToCSV(json) {
+            const trades = JSON.parse(json);
+            
+            if (!Array.isArray(trades)) {
+                alert('❌ Invalid JSON format');
+                return;
+            }
+            
+            // CSV Headers
+            const headers = [
+                'ID', 'Date', 'Time', 'Direction', 'Entry', 'SL', 
+                'TP', 'Result', 'Pips', 'Reason', 'Emotion', 
+                'Checklist', 'Notes', 'CreatedAt'
+            ];
+            
+            let csv = headers.join(',') + '\n';
+            
+            // CSV Rows
+            trades.forEach(t => {
+                const checklist = t.checklist ? JSON.stringify(t.checklist) : '{}';
+                const notes = (t.notes || '').replace(/,/g, ' '); // ลบ comma
+                
+                const row = [
+                    t.id || '',
+                    t.date || '',
+                    t.time || '',
+                    t.direction || '',
+                    t.entry || '',
+                    t.sl || '',
+                    t.tp || '',
+                    t.result || '',
+                    t.pips || '',
+                    t.reason || '',
+                    t.emotion || '',
+                    checklist,
+                    notes,
+                    t.createdAt || new Date().toISOString()
+                ];
+                
+                csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+            });
+            
+            return csv;
+        }
+        
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+        
+        document.getElementById('convertForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const jsonInput = document.getElementById('jsonInput').value;
+            
+            try {
+                const csv = convertToCSV(jsonInput);
+                downloadCSV(csv, 'trades_firebase_to_sheets.csv');
+                alert('✅ แปลงเรียบร้อย! CSV ถูกดาวน์โหลดแล้ว');
+            } catch (error) {
+                alert('❌ เกิดข้อผิดพลาด: ' + error.message);
+            }
+        });
+    </script>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px; background: #1a1a2e; color: white;">
+    <h1>🔄 Convert Firebase JSON to Google Sheets CSV</h1>
+    
+    <form id="convertForm" style="margin-top: 20px;">
+        <label style="display: block; margin-bottom: 10px;">
+            วาง JSON จาก Firebase:
+        </label>
+        <textarea id="jsonInput" 
+                  rows="20" 
+                  cols="80" 
+                  style="width: 100%; background: rgba(0,0,0,0.3); color: white; border: 1px solid #444; padding: 10px;"
+                  placeholder='[
+  {
+    "id": "xxx",
+    "date": "2024-01-15",
+    ...
+  }
+]'
+                  required></textarea>
+        
+        <button type="submit" 
+                style="margin-top: 20px; padding: 15px 30px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: black; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;">
+            🔄 Convert to CSV
+        </button>
+</form>
+    
+    <div style="margin-top: 20px; padding: 15px; background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; border-radius: 10px;">
+        <strong>💡 วิธีใช้:</strong>
+        <ol style="margin-top: 10px; line-height: 1.8;">
+            <li>เปิดไฟล์ JSON จาก Firebase (xauusd_trades_YYYY-MM-DD.json)</li>
+            <li>Copy ทั้งหมด</li>
+            <li>วางในช่องด้านบน</li>
+            <li>กด "Convert to CSV"</li>
+            <li>เปิดไฟล์ CSV ด้วย Excel หรือ Google Sheets</li>
+        </ol>
+    </div>
+</body>
+</html>

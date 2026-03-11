@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to CSV Converter - Trading Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .input-dark { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); }
+        .input-dark:focus { border-color: #fbbf24; outline: none; }
+        .btn-gold { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(251,191,36,0.3); }
+        .table-row:hover { background: rgba(251,191,36,0.1); }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="text-6xl mb-4">🔄</div>
+            <h1 class="text-3xl font-bold mb-2">JSON to CSV Converter</h1>
+            <p class="text-gray-400">แปลงข้อมูล Firebase JSON เป็น CSV สำหรับ Google Sheets</p>
+        </div>
+
+        <!-- Import Section -->
+        <div class="glass rounded-xl p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <span class="mr-2">📁</span> นำเข้า JSON
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">วิธีที่ 1: วาง JSON</label>
+                    <textarea id="jsonInput" rows="10" 
+                              class="w-full input-dark rounded-lg px-4 py-3 text-white font-mono text-sm"
+                              placeholder='[
+  {
+    "date": "2024-01-15",
+    "time": "10:30",
+    "direction": "Long",
+    "entry": 2645.50,
+    "sl": 2640.00,
+    "tp": 2655.50,
+    "result": "Win",
+    "pips": 100,
+    "reason": "Engulfing Pattern",
+    "emotion": "Happy",
+    "checklist": {"signal":true,"sl":true,"tp":true,"rr":true},
+    "notes": "ดีมาก"
+  }
+]'
+                              required></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">วิธีที่ 2: อัปโหลดไฟล์ JSON</label>
+                    <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-yellow-500 transition-all cursor-pointer"
+                         onclick="document.getElementById('fileInput').click()">
+                        <div class="text-4xl mb-2">📂</div>
+                        <p class="text-gray-400">คลิกเพื่อเลือกไฟล์ JSON</p>
+                        <p class="text-sm text-gray-500 mt-2">หรือลากไฟล์มาวางที่นี่</p>
+                        <input type="file" id="fileInput" class="hidden" accept=".json" onchange="loadFile(event)">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <button onclick="convertToCSV()" id="convertBtn" class="btn-gold text-black font-bold py-4 rounded-lg text-lg">
+                🔄 แปลงเป็น CSV
+            </button>
+            <button onclick="previewCSV()" id="previewBtn" class="glass px-6 py-4 rounded-lg hover:bg-blue-500 hover:text-black transition-all text-lg disabled:opacity-50" disabled>
+                👁️ Preview CSV
+            </button>
+            <button onclick="downloadCSV()" id="downloadBtn" class="glass px-6 py-4 rounded-lg hover:bg-green-500 hover:text-black transition-all text-lg disabled:opacity-50" disabled>
+                📥 ดาวน์โหลด CSV
+            </button>
+        </div>
+
+        <!-- Status -->
+        <div class="glass rounded-xl p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <span class="mr-2">📊</span> สถานะ
+            </h2>
+            <div id="status" class="text-gray-400">
+                รอนำเข้า JSON...
+            </div>
+            <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 hidden">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-yellow-400" id="totalTrades">0</div>
+                    <div class="text-sm text-gray-400">Trades ทั้งหมด</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-400" id="totalWins">0</div>
+                    <div class="text-sm text-gray-400">Wins</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-red-400" id="totalLosses">0</div>
+                    <div class="text-sm text-gray-400">Losses</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-400" id="winRate">0%</div>
+                    <div class="text-sm text-gray-400">Win Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div id="previewSection" class="glass rounded-xl p-6 mb-6 hidden">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <span class="mr-2">👁️</span> Preview CSV
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-700 bg-gray-900/50">
+                            <th class="text-left py-2 px-2">ID</th>
+                            <th class="text-left py-2 px-2">Date</th>
+                            <th class="text-left py-2 px-2">Time</th>
+                            <th class="text-left py-2 px-2">Direction</th>
+                            <th class="text-right py-2 px-2">Entry</th>
+                            <th class="text-right py-2 px-2">SL</th>
+                            <th class="text-right py-2 px-2">TP</th>
+                            <th class="text-center py-2 px-2">Result</th>
+                            <th class="text-right py-2 px-2">Pips</th>
+                            <th class="text-left py-2 px-2">Reason</th>
+                            <th class="text-left py-2 px-2">Emotion</th>
+                            <th class="text-left py-2 px-2">Checklist</th>
+                            <th class="text-left py-2 px-2">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTable">
+                        <tr><td colspan="14" class="text-center py-8 text-gray-500">แสดง preview หลังแปลง CSV</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CSV Output -->
+        <div class="glass rounded-xl p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <span class="mr-2">📄</span> CSV Output
+            </h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">CSV Content (Copy ไปวางใน Google Sheets)</label>
+                    <textarea id="csvOutput" rows="15" 
+                              class="w-full input-dark rounded-lg px-4 py-3 text-white font-mono text-xs"
+                              placeholder='CSV จะแสดงที่นี่หลังแปลง...' readonly></textarea>
+                </div>
+                <button onclick="copyCSV()" id="copyBtn" class="w-full glass px-6 py-4 rounded-lg hover:bg-yellow-500 hover:text-black transition-all text-lg disabled:opacity-50" disabled>
+                    📋 Copy CSV ไป Clipboard
+                </button>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="glass rounded-xl p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <span class="mr-2">📋</span> วิธีนำไป Google Sheets
+            </h2>
+            <ol class="space-y-4 text-gray-300">
+                <li class="flex items-start">
+                    <span class="text-yellow-500 mr-2">1.</span>
+                    <div>
+                        <strong>แปลง JSON เป็น CSV</strong>
+                        <p class="text-sm text-gray-400 mt-1">กด "แปลงเป็น CSV" หรือวาง JSON แล้วกดปุ่ม</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-yellow-500 mr-2">2.</span>
+                    <div>
+                        <strong>Preview CSV</strong>
+                        <p class="text-sm text-gray-400 mt-1">กด "Preview CSV" เพื่อดูข้อมูลก่อน</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-yellow-500 mr-2">3.</span>
+                    <div>
+                        <strong>ดาวน์โหลด CSV</strong>
+                        <p class="text-sm text-gray-400 mt-1">กด "ดาวน์โหลด CSV" หรือ "Copy CSV ไป Clipboard"</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-yellow-500 mr-2">4.</span>
+                    <div>
+                        <strong>Import ไป Google Sheets</strong>
+                        <p class="text-sm text-gray-400 mt-1">เข้า Google Sheets → File → Import → เลือกไฟล์ CSV</p>
+                    </div>
+                </li>
+            </ol>
+            
+            <div class="mt-6 p-4 bg-blue-900/30 rounded-lg">
+                <h3 class="font-bold text-blue-300 mb-2">💡 เคล็ดลับ</h3>
+                <ul class="text-sm text-blue-200 space-y-1">
+                    <li>• หลัง Import ตรวจสอบว่าข้อมูลครบทุก field</li>
+                    <li>• Checklist จะแสดงเป็น JSON string เช่น {"signal":true,"sl":true}</li>
+                    <li>• ถ้าไม่ถูกใช้ Google Sheets Import อีกครั้ง</li>
+                    <li>• ถ้ายังไม่ได้ ใช้วิธี Copy ไปวางใน Google Sheets</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let csvData = '';
+        let jsonData = [];
+
+        function loadFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('jsonInput').value = e.target.result;
+                updateStatus('✅ โหลดไฟล์สำเร็จ: ' + file.name, 'text-green-400');
+            };
+            reader.readAsText(file);
+        }
+
+        function convertToCSV() {
+            const jsonInput = document.getElementById('jsonInput').value.trim();
+            
+            if (!jsonInput) {
+                alert('❌ กรุณาวาง JSON หรืออัปโหลดไฟล์');
+                return;
+            }
+
+            try {
+                jsonData = JSON.parse(jsonInput);
+
+                if (!Array.isArray(jsonData)) {
+                    throw new Error('JSON ต้องเป็น array');
+                }
+
+                if (jsonData.length === 0) {
+                    throw new Error('ไม่พบข้อมูลใน JSON');
+                }
+
+                // CSV Headers - สำคัญ! ต้องตรงตาม Google Sheets
+                const headers = [
+                    'ID',
+                    'Date',
+                    'Time',
+                    'Direction',
+                    'Entry',
+                    'SL',
+                    'TP',
+                    'Result',
+                    'Pips',
+                    'Reason',
+                    'Emotion',
+                    'Checklist',
+                    'Notes',
+                    'CreatedAt'
+                ];
+
+                let csv = headers.join(',') + '\n';
+
+                // CSV Rows
+                jsonData.forEach(trade => {
+                    const row = [
+                        trade.id || '',
+                        trade.date || '',
+                        trade.time || '',
+                        trade.direction || '',
+                        trade.entry || '',
+                        trade.sl || '',
+                        trade.tp || '',
+                        trade.result || '',
+                        trade.pips || '',
+                        trade.reason || '',
+                        trade.emotion || '',
+                        trade.checklist ? JSON.stringify(trade.checklist).replace(/"/g, '""') : '{}',
+                        trade.notes ? trade.notes.replace(/"/g, '""').replace(/\n/g, ' ') : '',
+                        trade.createdAt || new Date().toISOString()
+                    ];
+
+                    // แต่ละ cell ต้องถูกครอบด้วย double quotes
+                    csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+                });
+
+                csvData = csv;
+                document.getElementById('csvOutput').value = csv;
+                
+                // Enable buttons
+                document.getElementById('previewBtn').disabled = false;
+                document.getElementById('downloadBtn').disabled = false;
+                document.getElementById('copyBtn').disabled = false;
+
+                // Update stats
+                updateStats();
+
+                // Update status
+                updateStatus(`✅ แปลงสำเร็จ! ${jsonData.length} trades`, 'text-green-400');
+
+                // Show preview
+                showPreview();
+
+                alert(`✅ แปลงสำเร็จ!\n\n📊 จำนวน: ${jsonData.length} trades\n📥 สามารถดาวน์โหลด CSV ได้แล้ว!`);
+
+            } catch (error) {
+                console.error('Conversion error:', error);
+                updateStatus('❌ เกิดข้อผิดพลาด: ' + error.message, 'text-red-400');
+                alert('❌ เกิดข้อผิดพลาด:\n\n' + error.message + '\n\n💡 ตรวจสอบว่า JSON format ถูกต้อง');
+            }
+        }
+
+        function updateStats() {
+            const total = jsonData.length;
+            const wins = jsonData.filter(t => t.result === 'Win').length;
+            const losses = jsonData.filter(t => t.result === 'Loss').length;
+            const winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : '0';
+
+            document.getElementById('totalTrades').textContent = total;
+            document.getElementById('totalWins').textContent = wins;
+            document.getElementById('totalLosses').textContent = losses;
+            document.getElementById('winRate').textContent = winRate + '%';
+            document.getElementById('stats').classList.remove('hidden');
+        }
+
+        function showPreview() {
+            document.getElementById('previewSection').classList.remove('hidden');
+            
+            const tbody = document.getElementById('previewTable');
+            const previewTrades = jsonData.slice(0, 10);
+
+            tbody.innerHTML = previewTrades.map(trade => {
+                const resultClass = trade.result === 'Win' ? 'text-green-400' : 
+                                   trade.result === 'Loss' ? 'text-red-400' : 
+                                   'text-yellow-400';
+                const resultIcon = trade.result === 'Win' ? '✅' : 
+                                  trade.result === 'Loss' ? '❌' : 
+                                  '⭕';
+                
+                return `
+                    <tr class="table-row border-b border-gray-800">
+                        <td class="py-2 px-2 font-mono text-xs">${trade.id ? trade.id.substring(0, 8) + '...' : '-'}</td>
+                        <td class="py-2 px-2">${trade.date || '-'}</td>
+                        <td class="py-2 px-2">${trade.time || '-'}</td>
+                        <td class="py-2 px-2">${trade.direction === 'Long' ? '🟢' : '🔴'}</td>
+                        <td class="py-2 px-2 text-right">${trade.entry || '-'}</td>
+                        <td class="py-2 px-2 text-right">${trade.sl || '-'}</td>
+                        <td class="py-2 px-2 text-right">${trade.tp || '-'}</td>
+                        <td class="py-2 px-2 text-center ${resultClass}">${resultIcon}</td>
+                        <td class="py-2 px-2 text-right ${trade.pips >= 0 ? 'text-green-400' : 'text-red-400'}">${trade.pips || 0}</td>
+                        <td class="py-2 px-2">${trade.reason || '-'}</td>
+                        <td class="py-2 px-2">${trade.emotion || '-'}</td>
+                        <td class="py-2 px-2 text-xs">${trade.checklist ? JSON.stringify(trade.checklist).substring(0, 30) + '...' : '-'}</td>
+                        <td class="py-2 px-2">${trade.notes ? trade.notes.substring(0, 20) + '...' : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function previewCSV() {
+            if (!csvData) {
+                alert('❌ ยังไม่มี CSV ให้ preview');
+                return;
+            }
+            alert('CSV Content:\n\n' + csvData.substring(0, 500) + '...\n\n(Preview 500 ตัวอักษรแรก)');
+        }
+
+        function downloadCSV() {
+            if (!csvData) {
+                alert('❌ ยังไม่มี CSV ให้ดาวน์โหลด');
+                return;
+            }
+
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'xauusd_trades_' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+
+            updateStatus('✅ ดาวน์โหลด CSV สำเร็จ!', 'text-green-400');
+        }
+
+        function copyCSV() {
+            if (!csvData) {
+                alert('❌ ยังไม่มี CSV ให้ copy');
+                return;
+            }
+
+            navigator.clipboard.writeText(csvData).then(() => {
+                alert('✅ Copy CSV ไป clipboard สำเร็จ!\n\n💡 ไปวางใน Google Sheets ได้เลย');
+                updateStatus('✅ Copy สำเร็จ!', 'text-green-400');
+            }).catch(err => {
+                alert('❌ Copy ไม่สำเร็จ: ' + err.message);
+            });
+        }
+
+        function updateStatus(message, colorClass) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = colorClass || 'text-gray-400';
+        }
+
+        // Drag and drop support
+        const dropZone = document.querySelector('.border-dashed');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-yellow-500');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-yellow-500');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-yellow-500');
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/json') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('jsonInput').value = e.target.result;
+                    updateStatus('✅ โหลดไฟล์สำเร็จ: ' + file.name, 'text-green-400');
+                };
+                reader.readAsText(file);
+            } else {
+                alert('❌ กรุณาเลือกไฟล์ JSON เท่านั้น');
+            }
+        });
+    </script>
+</body>
+</html>

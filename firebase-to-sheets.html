@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase to Sheets Migration Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .input-dark { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); }
+        .input-dark:focus { border-color: #fbbf24; outline: none; }
+        .btn-gold { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(251,191,36,0.3); }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="text-6xl mb-4">🔄</div>
+            <h1 class="text-3xl font-bold mb-2">ย้ายข้อมูล Firebase → Google Sheets</h1>
+            <p class="text-gray-400">คัดลอกข้อมูลเก่าจาก Firebase ไปยัง Google Sheets</p>
+        </div>
+
+        <!-- Firebase Config -->
+        <div class="glass rounded-xl p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <span class="mr-2">🔥</span> Firebase Config
+            </h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">API Key</label>
+                    <input type="text" id="apiKey" class="w-full input-dark rounded-lg px-4 py-3 text-white"
+                           value="AIzaSyDI7WZCjOTxVzZjc37NIiRxHD-OV_6w63Y">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Project ID</label>
+                    <input type="text" id="projectId" class="w-full input-dark rounded-lg px-4 py-3 text-white"
+                           value="karn-trading-journal">
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <button onclick="loadFromFirebase()" class="btn-gold text-black font-bold py-4 rounded-lg text-lg">
+                🔥 โหลดจาก Firebase
+            </button>
+            <button onclick="exportToCSV()" id="exportBtn" class="glass px-6 py-4 rounded-lg hover:bg-green-500 hover:text-black transition-all text-lg disabled:opacity-50" disabled>
+                📤 Export เป็น CSV
+            </button>
+        </div>
+
+        <!-- Status -->
+        <div class="glass rounded-xl p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <span class="mr-2">📊</span> สถานะ
+            </h2>
+            <div id="status" class="text-gray-400">
+                รอดำเนินการ...
+            </div>
+            <div id="progress" class="mt-4 hidden">
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div id="progressBar" class="bg-yellow-500 h-2 rounded-full transition-all" style="width: 0%"></div>
+                </div>
+                <p id="progressText" class="text-sm text-gray-400 mt-2">0 / 0 trades</p>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div id="previewSection" class="glass rounded-xl p-6 hidden">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <span class="mr-2">👁️</span> Preview Data
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-700">
+                            <th class="text-left py-2">ID</th>
+                            <th class="text-left py-2">Date</th>
+                            <th class="text-left py-2">Time</th>
+                            <th class="text-left py-2">Dir</th>
+                            <th class="text-right py-2">Pips</th>
+                            <th class="text-center py-2">Result</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTable">
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-sm text-gray-400 mt-4">
+                แสดง 10 รายการแรก (จากทั้งหมด <span id="totalCount">0</span> รายการ)
+            </p>
+        </div>
+
+        <!-- Instructions -->
+        <div class="glass rounded-xl p-6 mt-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <span class="mr-2">📋</span> วิธีใช้งาน
+            </h2>
+            <ol class="space-y-4 text-gray-300">
+                <li class="flex items-start">
+                    <span class="text-yellow-500 mr-2">1.</span>
+                    <div>
+                        <strong>ตรวจสอบ Firebase Config</strong>
+                        <p class="text-sm text-gray-400 mt-1">ตรวจสอบว่า API Key และ Project ID ถูกต้อง</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-yellow-500 mr-2">2.</span>
+                    <div>
+                        <strong>กด "โหลดจาก Firebase"</strong>
+                        <p class="text-sm text-gray-400 mt-1">รอสักครู่ให้โหลดข้อมูลทั้งหมด</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-yellow-500 mr-2">3.</span>
+                    <div>
+                        <strong>ตรวจสอบ Preview</strong>
+                        <p class="text-sm text-gray-400 mt-1">ดูข้อมูลที่โหลดมาว่าถูกต้องหรือไม่</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-yellow-500 mr-2">4.</span>
+                    <div>
+                        <strong>กด "Export เป็น CSV"</strong>
+                        <p class="text-sm text-gray-400 mt-1">ดาวน์โหลดไฟล์ CSV</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-yellow-500 mr-2">5.</span>
+                    <div>
+                        <strong>Import ไป Google Sheets</strong>
+                        <p class="text-sm text-gray-400 mt-1">File → Import → เลือกไฟล์ CSV</p>
+                    </div>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://unpkg.com/firebase@10.7.1/firebase-app-compat.js"></script>
+    <script src="https://unpkg.com/firebase@10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        let db = null;
+        let loadedTrades = [];
+
+        function initializeFirebase() {
+            const config = {
+                apiKey: document.getElementById('apiKey').value,
+                projectId: document.getElementById('projectId').value
+            };
+
+            try {
+                firebase.initializeApp(config);
+                db = firebase.firestore();
+                updateStatus('✅ Firebase initialized', 'text-green-400');
+            } catch (error) {
+                updateStatus('❌ Firebase initialization failed: ' + error.message, 'text-red-400');
+            }
+        }
+
+        async function loadFromFirebase() {
+            initializeFirebase();
+
+            if (!db) {
+                alert('❌ Firebase not initialized');
+                return;
+            }
+
+            updateStatus('🔄 กำลังโหลดข้อมูล...', 'text-yellow-400');
+            showProgress(true);
+
+            try {
+                const snapshot = await db.collection('trades')
+                    .orderBy('date', 'desc')
+                    .orderBy('time', 'desc')
+                    .get();
+
+                loadedTrades = [];
+                snapshot.forEach((doc) => {
+                    loadedTrades.push(doc.data());
+                });
+
+                updateProgress(loadedTrades.length, loadedTrades.length);
+                updateStatus(`✅ โหลดสำเร็จ! ${loadedTrades.length} trades`, 'text-green-400');
+                showPreview();
+                document.getElementById('exportBtn').disabled = false;
+            } catch (error) {
+                updateStatus('❌ Error loading trades: ' + error.message, 'text-red-400');
+                console.error('Error:', error);
+            }
+        }
+
+        function exportToCSV() {
+            if (loadedTrades.length === 0) {
+                alert('❌ ยังไม่มีข้อมูล');
+                return;
+            }
+
+            updateStatus('🔄 กำลังแปลงเป็น CSV...', 'text-yellow-400');
+
+            // CSV Headers
+            const headers = [
+                'ID', 'Date', 'Time', 'Direction', 'Entry', 'SL',
+                'TP', 'Result', 'Pips', 'Reason', 'Emotion',
+                'Checklist', 'Notes', 'CreatedAt'
+            ];
+
+            let csv = headers.join(',') + '\n';
+
+            // CSV Rows
+            loadedTrades.forEach(t => {
+                const checklist = t.checklist ? JSON.stringify(t.checklist).replace(/"/g, '""') : '{}';
+                const notes = (t.notes || '').replace(/"/g, '""');
+
+                const row = [
+                    t.id || '',
+                    t.date || '',
+                    t.time || '',
+                    t.direction || '',
+                    t.entry || '',
+                    t.sl || '',
+                    t.tp || '',
+                    t.result || '',
+                    t.pips || '',
+                    t.reason || '',
+                    t.emotion || '',
+                    checklist,
+                    notes,
+                    t.createdAt || new Date().toISOString()
+                ];
+
+                csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+            });
+
+            // Download
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'trades_firebase_to_sheets_' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+
+            updateStatus('✅ Export สำเร็จ! CSV ถูกดาวน์โหลดแล้ว', 'text-green-400');
+        }
+
+        function showPreview() {
+            document.getElementById('previewSection').classList.remove('hidden');
+            document.getElementById('totalCount').textContent = loadedTrades.length;
+
+            const tbody = document.getElementById('previewTable');
+            const previewTrades = loadedTrades.slice(0, 10);
+
+            tbody.innerHTML = previewTrades.map(t => {
+                const resultClass = t.result === 'Win' ? 'text-green-400' : (t.result === 'Loss' ? 'text-red-400' : 'text-yellow-400');
+                return `
+                    <tr class="border-b border-gray-800">
+                        <td class="py-2 font-mono text-xs">${t.id ? t.id.substring(0, 8) + '...' : '-'}</td>
+                        <td class="py-2">${t.date || '-'}</td>
+                        <td class="py-2">${t.time || '-'}</td>
+                        <td class="py-2">${t.direction === 'Long' ? '🟢' : '🔴'}</td>
+                        <td class="py-2 text-right ${t.pips >= 0 ? 'text-green-400' : 'text-red-400'}">${t.pips || 0}</td>
+                        <td class="py-2 text-center ${resultClass}">${t.result || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateStatus(message, colorClass) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = colorClass || 'text-gray-400';
+        }
+
+        function showProgress(show) {
+            document.getElementById('progress').classList.toggle('hidden', !show);
+        }
+
+        function updateProgress(current, total) {
+            const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = `${current} / ${total} trades`;
+        }
+    </script>
+</body>
+</html>
